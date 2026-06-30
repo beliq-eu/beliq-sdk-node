@@ -1,0 +1,90 @@
+{
+  "name": "@beliq/sdk",
+  "version": "0.1.0",
+  "description": "Official beliq SDK: generate, validate, parse, and convert EU-compliant e-invoices (XRechnung, ZUGFeRD, Factur-X, Peppol BIS) against authority-pinned, drift-checked rules.",
+  "keywords": [
+    "beliq",
+    "e-invoice",
+    "einvoice",
+    "xrechnung",
+    "zugferd",
+    "factur-x",
+    "peppol",
+    "en16931",
+    "compliance",
+    "sdk"
+  ],
+  "license": "MIT",
+  "homepage": "https://beliq.eu",
+  "author": {
+    "name": "beliq",
+    "email": "hello@beliq.eu"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beliq-eu/beliq-sdk-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/beliq-eu/beliq-sdk-node/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./helpers": {
+      "import": {
+        "types": "./dist/helpers.d.ts",
+        "default": "./dist/helpers.js"
+      },
+      "require": {
+        "types": "./dist/helpers.d.cts",
+        "default": "./dist/helpers.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=20.15"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix",
+    "sync:spec": "node scripts/sync-spec.mjs",
+    "gen:types": "node scripts/gen-types.mjs",
+    "openapi:check": "node scripts/gen-types.mjs --check",
+    "test": "vitest run --exclude test/integration.test.ts",
+    "test:integration": "vitest run test/integration.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "openapi-typescript": "^7.4.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.8"
+  }
+}
