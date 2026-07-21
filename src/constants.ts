@@ -7,6 +7,12 @@
 
 export const DEFAULT_BASE_URL = 'https://api.beliq.eu';
 
+// Default per-request timeout. Sits above the API's server-side processing
+// budget (its engine call budget is ~30s) so it only trips on a genuinely
+// stalled connection, not a legitimately slow convert/generate. Override via
+// BeliqOptions.timeout.
+export const DEFAULT_TIMEOUT_MS = 60_000;
+
 export const LIVE_GENERATE_STANDARDS = ['xrechnung', 'zugferd', 'facturx', 'peppol-bis'] as const;
 
 export const LIVE_PROFILES = ['basicwl', 'en16931', 'extended', 'extended-ctc-fr'] as const;

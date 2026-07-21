@@ -23,6 +23,17 @@ export class BeliqApiError extends Error {
   }
 }
 
+/** Thrown when a request exceeds the client timeout before the response completes. */
+export class BeliqTimeoutError extends Error {
+  readonly timeoutMs: number;
+
+  constructor(timeoutMs: number) {
+    super(`beliq: request timed out after ${timeoutMs}ms`);
+    this.name = 'BeliqTimeoutError';
+    this.timeoutMs = timeoutMs;
+  }
+}
+
 interface ParsedEnvelope {
   success?: boolean;
   data?: unknown;

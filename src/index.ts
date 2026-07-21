@@ -12,10 +12,11 @@ export type {
   ConvertMeta,
 } from './client';
 
-export { BeliqApiError } from './errors';
+export { BeliqApiError, BeliqTimeoutError } from './errors';
 
 export {
   DEFAULT_BASE_URL,
+  DEFAULT_TIMEOUT_MS,
   LIVE_GENERATE_STANDARDS,
   LIVE_PROFILES,
   LIVE_VALIDATE_FORMATS,

@@ -1,6 +1,6 @@
 import { buildRequest, type BuildParams } from './buildRequest';
 import { BeliqApiError, errorFromResponse, parseEnvelope } from './errors';
-import { DEFAULT_BASE_URL } from './constants';
+import { DEFAULT_BASE_URL, DEFAULT_TIMEOUT_MS } from './constants';
 import { sniffContentType, toBytes, decodeUtf8, type DocumentInput, type PlainObject } from './internal';
 import { send, type ResolvedConfig, type RawResponse } from './transport';
 import type {
@@ -26,6 +26,8 @@ export interface BeliqOptions {
   auth?: 'header' | 'bearer';
   /** Inject a fetch implementation (tests, custom agents). Defaults to global fetch. */
   fetch?: typeof fetch;
+  /** Per-request timeout in ms. A stalled request rejects with BeliqTimeoutError. Defaults to 60000. */
+  timeout?: number;
 }
 
 export interface GenerateInput {
@@ -140,11 +142,16 @@ export class Beliq {
     if (typeof fetchImpl !== 'function') {
       throw new Error('beliq: no global fetch available; pass options.fetch');
     }
+    const timeoutMs = options.timeout ?? DEFAULT_TIMEOUT_MS;
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+      throw new Error('beliq: timeout must be a positive number of milliseconds');
+    }
     this.#config = {
       apiKey: options.apiKey,
       baseUrl: (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, ''),
       auth: options.auth ?? 'header',
       fetchImpl,
+      timeoutMs,
     };
   }
 

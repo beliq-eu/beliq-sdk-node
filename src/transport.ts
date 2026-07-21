@@ -1,11 +1,12 @@
 import type { BuiltRequest } from './buildRequest';
-import { errorFromResponse } from './errors';
+import { BeliqTimeoutError, errorFromResponse } from './errors';
 
 export interface ResolvedConfig {
   apiKey: string;
   baseUrl: string;
   auth: 'header' | 'bearer';
   fetchImpl: typeof fetch;
+  timeoutMs: number;
 }
 
 export interface RawResponse {
@@ -43,13 +44,24 @@ export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<R
   const body =
     req.jsonBody !== undefined ? JSON.stringify(req.jsonBody) : req.rawBody;
 
-  const res = await config.fetchImpl(buildUrl(config.baseUrl, req.path, req.query), {
-    method: req.method,
-    headers,
-    body,
-  });
+  let res: Response;
+  let bytes: Uint8Array;
+  try {
+    res = await config.fetchImpl(buildUrl(config.baseUrl, req.path, req.query), {
+      method: req.method,
+      headers,
+      body,
+      signal: AbortSignal.timeout(config.timeoutMs),
+    });
+    bytes = new Uint8Array(await res.arrayBuffer());
+  } catch (err) {
+    // AbortSignal.timeout rejects with a DOMException named 'TimeoutError'.
+    if (err instanceof Error && err.name === 'TimeoutError') {
+      throw new BeliqTimeoutError(config.timeoutMs);
+    }
+    throw err;
+  }
 
-  const bytes = new Uint8Array(await res.arrayBuffer());
   if (!res.ok) throw errorFromResponse(res.status, bytes);
   return { status: res.status, headers: res.headers, bytes };
 }
