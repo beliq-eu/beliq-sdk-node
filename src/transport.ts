@@ -39,6 +39,7 @@ function buildUrl(baseUrl: string, path: string, query?: BuiltRequest['query']):
 export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<RawResponse> {
   const headers: Record<string, string> = { ...authHeaders(config) };
   if (req.contentType) headers['Content-Type'] = req.contentType;
+  if (req.accept) headers['Accept'] = req.accept;
 
   const body =
     req.jsonBody !== undefined ? JSON.stringify(req.jsonBody) : req.rawBody;

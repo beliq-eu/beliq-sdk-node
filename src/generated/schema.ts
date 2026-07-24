@@ -30,7 +30,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Generate a compliant e-invoice from an EN 16931 invoice object. */
+        /**
+         * Generate a compliant e-invoice from an EN 16931 invoice object.
+         * @description Returns the generated file as a raw binary body by default. Binary responses carry the applied ruleset/artifact versions on the `X-Version-Block` header (compact JSON, e.g. `schematronVersion`, `ciusVersion`, `facturxProfile`) and the verifiability seal on `X-Ruleset-Sha256` / `X-Ruleset-Artifacts`. Request `Accept: application/json` to receive a JSON envelope instead: the file base64-encoded in `output`, its SHA-256 in `sha256` (run `sha256sum` on the download to reproduce it), and the ruleset seal in `validationResult`.
+         */
         post: operations["generateInvoice"];
         delete?: never;
         options?: never;
@@ -47,7 +50,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Validate an XML or PDF e-invoice against the authority-pinned rules. */
+        /**
+         * Validate an XML or PDF e-invoice against the authority-pinned rules.
+         * @description The JSON response carries two verifiability hashes so you can check the result yourself. `sha256` is the lowercase-hex SHA-256 of the exact bytes you posted; run `sha256sum` on your file to reproduce it and confirm round-trip integrity. `rulesetSha256` fingerprints the rule artifacts the engine ran to judge the document (the compiled Schematron XSLT(s) for the EN 16931 family and its CIUS/national overlays, or the authority root XSD for XSD-only national formats), so you can confirm the ruleset that judged you is the one beliq publicly pins (see GET /v1/rulesets). `rulesetSha256` is present whenever a ruleset ran. `rulesetArtifacts` lists the component rows it is built from (`{ key, version, fileSha256 }` each): sort the `"<key>@<version>=<fileSha256>"` lines, join with newlines, and SHA-256 to reproduce `rulesetSha256` from these published values alone. That reproduction works for every result; the separate step of matching each component against the GET /v1/rulesets catalog covers publicly-supported formats only — a provisional national format (e.g. Italy FatturaPA) returns real, pinned components that are intentionally kept off the public catalog, so they will not appear there. `driftCheckedAt` is an ISO 8601 UTC instant reporting when those pinned artifacts were last confirmed to still match their upstream authority sources (the nightly drift check): where `rulesetSha256` proves the artifact we ran is the one we pin, `driftCheckedAt` says when we last confirmed that pin still matches what the authority publishes. It is a conservative lower bound ("verified at least as recently as"), present alongside `rulesetSha256` only when every pinned artifact cleared that check.
+         */
         post: operations["validateInvoice"];
         delete?: never;
         options?: never;
@@ -81,8 +87,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Convert an e-invoice between formats within the EN 16931 family. */
+        /**
+         * Convert an e-invoice between formats within the EN 16931 family.
+         * @description The `X-Version-Block` response header (compact JSON) names the ruleset/artifact versions this engine build pins for the produced target format. It is descriptive (convert runs no validation over its output) and mirrors the data published by `GET /v1/rulesets`.
+         */
         post: operations["convertInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rulesets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Active ruleset/artefact versions + ruleset-hash catalog per supported format (public, no quota cost).
+         * @description Public reference for the ruleset versions and artifact hashes Beliq pins. `artifacts` is the ruleset-hash catalog: each rule artifact that can run for a publicly-supported format, with the SHA-256 of its exact file bytes. To verify a `POST /v1/validate` response for a publicly-supported format, confirm each of its `rulesetArtifacts` components appears here, then reproduce its `rulesetSha256` by sorting the components’ `"<key>@<version>=<fileSha256>"` lines, joining with newlines, and taking the SHA-256. (The `rulesetSha256` reproduction needs only the response’s own components, so it holds for any result; provisional national formats run real, pinned artifacts that are intentionally omitted here, so their components will not appear in this catalog.) For compiled-Schematron families the published hash proves the artifact Beliq ran is the one Beliq pins, not a value reproducible from the authority’s raw source.
+         */
+        get: operations["getRulesets"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -137,6 +166,7 @@ export interface operations {
                             org: {
                                 id: string;
                                 name: string;
+                                rulesetChannel: "latest" | "previous";
                             };
                             plan: {
                                 id: number | null;
@@ -151,11 +181,13 @@ export interface operations {
                             };
                         };
                         error?: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -170,11 +202,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -189,11 +223,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -210,8 +246,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    standard: "xrechnung" | "zugferd" | "facturx" | "peppol-bis" | "fatturapa" | "facturae" | "eslog";
-                    profile?: "minimum" | "basicwl" | "basic" | "en16931" | "extended" | "extended-ctc-fr" | "xrechnung" | "peppol" | "romania-ro-cius" | "netherlands-nlcius" | "ordinaria" | "eracun";
+                    standard: "xrechnung" | "zugferd" | "facturx" | "peppol-bis" | "fatturapa" | "facturae" | "eslog" | "ksef";
+                    profile?: "minimum" | "basicwl" | "basic" | "en16931" | "extended" | "extended-ctc-fr" | "xrechnung" | "peppol" | "romania-ro-cius" | "netherlands-nlcius" | "ordinaria" | "eracun" | "fa3";
                     facturxProfile?: "minimum" | "basicwl" | "basic" | "en16931" | "extended" | "extended-ctc-fr";
                     output: "xml" | "pdf";
                     invoice: {
@@ -292,6 +328,8 @@ export interface operations {
                             vatRate: number;
                             taxableAmount: number;
                             taxAmount: number;
+                            exemptionReasonText?: string;
+                            exemptionReasonCode?: string;
                         }[];
                         paymentMeans?: {
                             typeCode: string;
@@ -364,7 +402,16 @@ export interface operations {
                             profile: string;
                             validationResult: {
                                 valid: boolean;
-                                format: "cii" | "ubl" | "fatturapa" | "facturae" | "eslog" | "sdi_messaggio" | "unknown";
+                                format: "cii" | "ubl" | "fatturapa" | "facturae" | "eslog" | "sdi_messaggio" | "poland_ksef_fa2" | "poland_ksef_fa3" | "unknown";
+                                sha256?: string;
+                                rulesetSha256?: string;
+                                rulesetArtifacts?: {
+                                    key: string;
+                                    version: string;
+                                    fileSha256: string;
+                                }[];
+                                /** Format: date-time */
+                                driftCheckedAt?: string;
                                 profileDetected?: string;
                                 schematronVersion?: string;
                                 ciusVersion?: string;
@@ -383,6 +430,8 @@ export interface operations {
                                 sloveniaEslogRuntimeVersion?: string;
                                 romaniaRoCiusVersion?: string;
                                 netherlandsNlciusVersion?: string;
+                                rulesetChannel?: "latest" | "previous";
+                                rulesetFellBack?: boolean;
                                 errors: {
                                     ruleId: string;
                                     severity: "fatal" | "error" | "warning" | "info";
@@ -396,13 +445,20 @@ export interface operations {
                                     message: string;
                                 }[];
                             };
+                            output?: string;
+                            outputFormat?: string;
+                            contentType?: string;
+                            sha256?: string;
+                            pdfKind?: string;
                         };
                         error?: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -417,11 +473,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -436,11 +494,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -455,11 +515,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -474,11 +536,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -491,7 +555,10 @@ export interface operations {
                 format?: "auto" | "cii" | "ubl" | "fatturapa" | "sdi_messaggio" | "facturae" | "eslog";
                 franceCtc?: boolean;
             };
-            header?: never;
+            header?: {
+                /** @description Pin the validation ruleset for this request. A channel ("latest" or "previous"), or a comma-separated list of exact per-format pins as "<artifactKey>:<version>" (e.g. "xrechnung_schematron:2.4.0"). The two forms are mutually exclusive. Default (no header) uses "latest". Effective on this route only — parse/generate/convert accept but ignore it. The applied ruleset is echoed in the Beliq-Ruleset-Resolved response header; see GET /v1/rulesets for selectable channels. */
+                "Beliq-Ruleset"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -511,7 +578,16 @@ export interface operations {
                         success: boolean;
                         data?: {
                             valid: boolean;
-                            format: "cii" | "ubl" | "fatturapa" | "facturae" | "eslog" | "sdi_messaggio" | "unknown";
+                            format: "cii" | "ubl" | "fatturapa" | "facturae" | "eslog" | "sdi_messaggio" | "poland_ksef_fa2" | "poland_ksef_fa3" | "unknown";
+                            sha256?: string;
+                            rulesetSha256?: string;
+                            rulesetArtifacts?: {
+                                key: string;
+                                version: string;
+                                fileSha256: string;
+                            }[];
+                            /** Format: date-time */
+                            driftCheckedAt?: string;
                             profileDetected?: string;
                             schematronVersion?: string;
                             ciusVersion?: string;
@@ -530,6 +606,8 @@ export interface operations {
                             sloveniaEslogRuntimeVersion?: string;
                             romaniaRoCiusVersion?: string;
                             netherlandsNlciusVersion?: string;
+                            rulesetChannel?: "latest" | "previous";
+                            rulesetFellBack?: boolean;
                             errors: {
                                 ruleId: string;
                                 severity: "fatal" | "error" | "warning" | "info";
@@ -544,11 +622,13 @@ export interface operations {
                             }[];
                         };
                         error?: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -563,11 +643,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -582,11 +664,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -601,11 +685,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -716,6 +802,8 @@ export interface operations {
                                     vatRate: number;
                                     taxableAmount: number;
                                     taxAmount: number;
+                                    exemptionReasonText?: string;
+                                    exemptionReasonCode?: string;
                                 }[];
                                 paymentMeans?: {
                                     typeCode: string;
@@ -767,11 +855,13 @@ export interface operations {
                             };
                         };
                         error?: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -786,11 +876,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -805,11 +897,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -844,11 +938,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -863,11 +959,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -882,11 +980,13 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };
@@ -901,11 +1001,73 @@ export interface operations {
                         /** @enum {boolean} */
                         success: false;
                         error: {
-                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID";
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
                             message: string;
                             details?: {
                                 [key: string]: unknown;
                             };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getRulesets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data?: {
+                            rulesets: {
+                                format: string;
+                                label: string;
+                                standard: string;
+                                authority: string;
+                                region: string;
+                                specVersion: string;
+                                rulesetVersion: string;
+                                rulesetArtefact: string;
+                                versionKey: string;
+                                verificationTier: "conformance-verified" | "builder-round-trip" | "reconstructed-rules" | "xsd-structural" | null;
+                                rulesProvenance: "authority-conformance" | "authority-artifact" | "community" | "beliq-authored" | "none";
+                                verificationBadge: "authority-verified" | "independently-rule-checked" | "structure-checked";
+                                releaseDate: string | null;
+                                repo: string | null;
+                                tag: string | null;
+                            }[];
+                            channels: {
+                                id: "latest" | "previous";
+                                label: string;
+                                description: string;
+                            }[];
+                            artifacts: {
+                                key: string;
+                                version: string;
+                                fileSha256: string;
+                            }[];
+                        };
+                        error?: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
                         };
                     };
                 };

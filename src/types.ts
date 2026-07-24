@@ -37,6 +37,12 @@ export type ValidationFormat = ValidationResult['format'];
 /** Structured invoice extracted from a document (POST /v1/parse). */
 export type ParseResult = Json200Data<'parseInvoice'>;
 
+/** The JSON-mode generate envelope (Accept: application/json): the seal. */
+export type GenerateResponse = Json200Data<'generateInvoice'>;
+
+/** One row of the ruleset fingerprint (key, version, file hash). */
+export type RulesetArtifact = NonNullable<ValidationResult['rulesetArtifacts']>[number];
+
 /** The EN 16931 invoice generate accepts, and every option it carries. */
 export type GenerateBody = RequestJson<'generateInvoice'>;
 export type Invoice = GenerateBody['invoice'];

@@ -68,6 +68,13 @@ describe('buildRequest - generate', () => {
     expect(r.jsonBody).toHaveProperty('pdfTemplateId', 'tpl-1');
     expect(r.jsonBody!.invoice).toEqual({ number: 'INV-1', note: 'x' });
   });
+
+  it('requests the JSON seal envelope when sealed', () => {
+    const r = buildRequest(gen({ sealed: true }));
+    expect(r.accept).toBe('application/json');
+    expect(r.outputKind).toBe('json');
+    expect(buildRequest(gen()).accept).toBeUndefined();
+  });
 });
 
 describe('buildRequest - validate', () => {

@@ -17,9 +17,11 @@ export type { PlainObject, DocumentInput } from './internal';
 export {
   DEFAULT_BASE_URL,
   LIVE_GENERATE_STANDARDS,
+  LIVE_GENERATE_PRESETS,
   LIVE_PROFILES,
   LIVE_VALIDATE_FORMATS,
   LIVE_PARSE_FORMATS,
   LIVE_CONVERT_SOURCE_FORMATS,
   LIVE_CONVERT_TARGET_FORMATS,
 } from './constants';
+export type { GeneratePreset } from './constants';

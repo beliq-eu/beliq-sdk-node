@@ -52,9 +52,16 @@ if (!result.valid) {
 Create an API key in the beliq dashboard under API Keys, then pass it to the client:
 
 ```ts
-new Beliq({ apiKey: 'blq_...' });                 // sends X-API-Key (default)
-new Beliq({ apiKey: 'blq_...', auth: 'bearer' });  // sends Authorization: Bearer
-new Beliq({ apiKey: 'blq_...', baseUrl: 'https://staging.beliq.eu' });
+new Beliq({ apiKey: 'blq_live_...' });                 // sends X-API-Key (default)
+new Beliq({ apiKey: 'blq_live_...', auth: 'bearer' });  // sends Authorization: Bearer
+new Beliq({ apiKey: 'blq_live_...', baseUrl: 'https://staging.beliq.eu' });
+```
+
+Keys are prefixed `blq_live_` (production, draws your plan quota) or `blq_test_` (sandbox, separate free allowance, watermarked output). `client.livemode` reports the mode from the key prefix before any request; generate and convert results also carry the authoritative `meta.livemode` from the response.
+
+```ts
+const beliq = new Beliq({ apiKey: process.env.BELIQ_API_KEY! });
+if (!beliq.livemode) console.warn('running against the sandbox');
 ```
 
 ## API
@@ -62,12 +69,35 @@ new Beliq({ apiKey: 'blq_...', baseUrl: 'https://staging.beliq.eu' });
 | Method | Endpoint | Input | Returns |
 |---|---|---|---|
 | `me()` | GET /v1/me | none | `AccountInfo` (no quota cost) |
-| `generate(input)` | POST /v1/generate | EN 16931 invoice object | `{ contentType, bytes, xml?, meta }` |
+| `generate(input)` | POST /v1/generate | EN 16931 invoice object | `{ contentType, bytes, xml?, sha256?, validationResult?, meta }` |
 | `validate(document, options?)` | POST /v1/validate | XML or PDF | `ValidationResult` |
 | `parse(document, options?)` | POST /v1/parse | XML or PDF | `ParseResult` |
 | `convert(document, options)` | POST /v1/convert | XML or PDF | `{ contentType, bytes, meta }` |
 
-`document` accepts a `string`, `Uint8Array`, `Buffer`, `ArrayBuffer`, or typed array. The content type is sniffed from the bytes (PDF vs XML) unless you pass `options.contentType`. `generate` and `convert` return raw document bytes plus the response-header metadata (`schematronVersion`, `pdfKind`, `sourceFormat`/`targetFormat`, `lostElements`, `conversionTools`); for an XML output, `generate` also decodes `xml`.
+`document` accepts a `string`, `Uint8Array`, `Buffer`, `ArrayBuffer`, or typed array. The content type is sniffed from the bytes (PDF vs XML) unless you pass `options.contentType`. `generate` and `convert` return raw document bytes plus the response-header metadata (`schematronVersion`, `pdfKind`, `sourceFormat`/`targetFormat`, `lostElements`, `conversionTools`, `livemode`); for an XML output, `generate` also decodes `xml`.
+
+### Verify-it-yourself seal
+
+Pass `seal: true` to `generate` to also get the document `sha256` and the full `validationResult`. Hashing the returned bytes reproduces the hash, so a recipient can check the document independently:
+
+```ts
+import { createHash } from 'node:crypto';
+
+const doc = await beliq.generate({ standard: 'xrechnung', invoice, seal: true });
+const ok = createHash('sha256').update(doc.bytes).digest('hex') === doc.sha256;
+console.log(doc.validationResult?.valid, doc.meta.rulesetSha256, ok);
+```
+
+### Curated option lists
+
+`LIVE_GENERATE_PRESETS` is the set of public generate targets beliq.eu itself offers, each mapping to the API `standard` (plus `profile`/`facturxProfile`) it needs. NLCIUS is a Peppol BIS profile and lives here rather than in `LIVE_GENERATE_STANDARDS`. Connectors build their dropdowns from these lists.
+
+```ts
+import { LIVE_GENERATE_PRESETS } from '@beliq/sdk';
+
+const nlcius = LIVE_GENERATE_PRESETS.find((p) => p.id === 'nlcius');
+await beliq.generate({ standard: nlcius!.standard, profile: nlcius!.profile, invoice });
+```
 
 Every option enum is typed from the OpenAPI spec, so wrong values fail at compile time. Errors throw `BeliqApiError` with a typed `.code`, HTTP `.status`, and any `.details`:
 

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { Beliq, BeliqApiError } from '../src/index';
 import type { Invoice } from '../src/index';
@@ -179,6 +180,7 @@ describe('Beliq client', () => {
         'x-lost-elements-count': '2',
         'x-lost-elements': '["BT-22","BT-23"]',
         'x-conversion-tools': 'beliq-engine@1.0',
+        'x-beliq-livemode': 'false',
       },
     }));
     const result = await new Beliq({ apiKey, fetch: fetchImpl }).convert('<rsm:CrossIndustryInvoice/>', {
@@ -191,7 +193,74 @@ describe('Beliq client', () => {
     expect(result.meta.lostElementsCount).toBe(2);
     expect(result.meta.lostElements).toEqual(['BT-22', 'BT-23']);
     expect(result.meta.conversionTools).toBe('beliq-engine@1.0');
+    expect(result.meta.livemode).toBe(false);
     expect(decode(result.bytes)).toBe(ublDoc);
+  });
+
+  it('derives livemode from the key prefix without a request', () => {
+    expect(new Beliq({ apiKey: 'blq_test_abc' }).livemode).toBe(false);
+    expect(new Beliq({ apiKey: 'blq_live_abc' }).livemode).toBe(true);
+    // A legacy prefix-less key is treated as live, matching the server.
+    expect(new Beliq({ apiKey: 'blq_legacykey' }).livemode).toBe(true);
+  });
+
+  it('generate({ seal: true }) requests JSON mode and returns the sha256 + validationResult', async () => {
+    const xmlDoc = '<?xml version="1.0"?><rsm:CrossIndustryInvoice/>';
+    const bytes = new TextEncoder().encode(xmlDoc);
+    const sha256 = createHash('sha256').update(bytes).digest('hex');
+    const envelope = JSON.stringify({
+      success: true,
+      data: {
+        invoiceId: '',
+        format: 'cii',
+        standard: 'xrechnung',
+        profile: 'xrechnung',
+        validationResult: { valid: true, format: 'cii', errors: [], warnings: [], schematronVersion: '1.3.16' },
+        output: Buffer.from(bytes).toString('base64'),
+        outputFormat: 'xml',
+        contentType: 'application/xml',
+        sha256,
+      },
+    });
+    const { fetchImpl, calls } = mock(() => ({
+      body: envelope,
+      headers: { 'content-type': 'application/json', 'x-beliq-livemode': 'false', 'x-ruleset-sha256': 'abc123' },
+    }));
+    const result = await new Beliq({ apiKey, fetch: fetchImpl }).generate({
+      standard: 'xrechnung',
+      invoice: minimalInvoice(),
+      seal: true,
+    });
+    expect(calls[0].headers['Accept']).toBe('application/json');
+    expect(result.contentType).toContain('application/xml');
+    expect(result.xml).toBe(xmlDoc);
+    expect(result.sha256).toBe(sha256);
+    // The seal is self-verifying: hashing the returned bytes reproduces the returned hash.
+    expect(createHash('sha256').update(result.bytes).digest('hex')).toBe(sha256);
+    expect(result.validationResult?.valid).toBe(true);
+    expect(result.meta.livemode).toBe(false);
+    expect(result.meta.rulesetSha256).toBe('abc123');
+  });
+
+  it('surfaces livemode and the ruleset seal headers on a binary generate', async () => {
+    const { fetchImpl } = mock(() => ({
+      body: new TextEncoder().encode('%PDF-1.7'),
+      headers: {
+        'content-type': 'application/pdf',
+        'x-beliq-livemode': 'true',
+        'x-ruleset-sha256': 'deadbeef',
+        'x-ruleset-artifacts': '[{"key":"en16931_cii_schematron","version":"1.3.16","fileSha256":"aa"}]',
+      },
+    }));
+    const result = await new Beliq({ apiKey: 'blq_live_x', fetch: fetchImpl }).generate({
+      standard: 'zugferd',
+      output: 'pdf',
+      invoice: minimalInvoice(),
+    });
+    expect(result.sha256).toBeUndefined();
+    expect(result.meta.livemode).toBe(true);
+    expect(result.meta.rulesetSha256).toBe('deadbeef');
+    expect(result.meta.rulesetArtifacts?.[0].key).toBe('en16931_cii_schematron');
   });
 
   it('throws BeliqApiError with the typed code on a 4xx (JSON endpoint)', async () => {

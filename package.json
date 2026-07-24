@@ -1,6 +1,6 @@
 {
   "name": "@beliq/sdk",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Official beliq SDK: generate, validate, parse, and convert EU-compliant e-invoices (XRechnung, ZUGFeRD, Factur-X, Peppol BIS) against authority-pinned, drift-checked rules.",
   "keywords": [
     "beliq",
@@ -72,6 +72,7 @@
     "sync:spec": "node scripts/sync-spec.mjs",
     "gen:types": "node scripts/gen-types.mjs",
     "openapi:check": "node scripts/gen-types.mjs --check",
+    "spec:drift": "node scripts/check-live-drift.mjs",
     "test": "vitest run --exclude test/integration.test.ts",
     "test:integration": "vitest run test/integration.test.ts",
     "prepublishOnly": "npm run build"
