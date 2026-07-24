@@ -49,6 +49,20 @@ export function decodeUtf8(bytes: Uint8Array): string {
   return new TextDecoder('utf-8').decode(bytes);
 }
 
+/** Decode base64 (standard or url-safe) to bytes across Node, browser, and worker runtimes. */
+export function decodeBase64(input: string): Uint8Array {
+  const b64 = input.replace(/-/g, '+').replace(/_/g, '/');
+  if (typeof atob === 'function') {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  const maybeBuffer = (globalThis as { Buffer?: { from(s: string, e: string): Uint8Array } }).Buffer;
+  if (maybeBuffer) return new Uint8Array(maybeBuffer.from(b64, 'base64'));
+  throw new Error('beliq: no base64 decoder available in this runtime');
+}
+
 const PDF_MAGIC = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
 
 /** Sniff `application/pdf` vs `application/xml` from the leading bytes. */

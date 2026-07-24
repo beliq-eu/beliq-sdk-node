@@ -27,6 +27,8 @@ export interface BuildParams {
   verify?: boolean;
   template?: string;
   pdfTemplateId?: string;
+  /** Request the JSON-mode seal (Accept: application/json) instead of the binary body. */
+  sealed?: boolean;
 
   // validate / parse / convert (raw document bytes in)
   rawBody?: Uint8Array;
@@ -59,6 +61,8 @@ export interface BuiltRequest {
   rawBody?: Uint8Array;
   /** Request content type; absent for GET. */
   contentType?: string;
+  /** Accept header; set when the caller wants a JSON envelope from an otherwise-binary op. */
+  accept?: string;
   outputKind: OutputKind;
 }
 
@@ -102,7 +106,10 @@ export function buildRequest(params: BuildParams): BuiltRequest {
         path: '/v1/generate',
         jsonBody: merged,
         contentType: 'application/json',
-        outputKind: 'binary',
+        // JSON mode returns the seal envelope; binary mode returns the raw document body.
+        ...(params.sealed
+          ? { accept: 'application/json', outputKind: 'json' as const }
+          : { outputKind: 'binary' as const }),
       };
     }
 

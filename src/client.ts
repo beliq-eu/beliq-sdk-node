@@ -1,7 +1,14 @@
 import { buildRequest, type BuildParams } from './buildRequest';
 import { BeliqApiError, errorFromResponse, parseEnvelope } from './errors';
 import { DEFAULT_BASE_URL } from './constants';
-import { sniffContentType, toBytes, decodeUtf8, type DocumentInput, type PlainObject } from './internal';
+import {
+  sniffContentType,
+  toBytes,
+  decodeUtf8,
+  decodeBase64,
+  type DocumentInput,
+  type PlainObject,
+} from './internal';
 import { send, type ResolvedConfig, type RawResponse } from './transport';
 import type {
   AccountInfo,
@@ -9,13 +16,18 @@ import type {
   ConvertTargetFormat,
   FacturxProfile,
   GenerateProfile,
+  GenerateResponse,
   Invoice,
   ParseFormat,
   ParseResult,
+  RulesetArtifact,
   Standard,
   ValidateFormat,
   ValidationResult,
 } from './types';
+
+/** blq_test_ marks a sandbox key; the server derives livemode from this exact prefix. */
+const TEST_KEY_PREFIX = 'blq_test_';
 
 export interface BeliqOptions {
   /** API key from the beliq dashboard (API Keys). */
@@ -41,6 +53,12 @@ export interface GenerateInput {
   template?: 'standard';
   /** Render the PDF from a saved dashboard template. */
   pdfTemplateId?: string;
+  /**
+   * Return the verify-it-yourself seal: the response carries the document
+   * `sha256` and the full `validationResult` alongside the decoded bytes.
+   * `sha256(bytes)` reproduces the returned hash.
+   */
+  seal?: boolean;
   /** Raw JSON deep-merged into the request body. */
   advanced?: PlainObject;
 }
@@ -74,6 +92,12 @@ export interface GenerateMeta {
   schematronVersion?: string;
   pdfKind?: string;
   outputEnvelope?: string;
+  /** Combined ruleset fingerprint the document was checked against. */
+  rulesetSha256?: string;
+  /** Per-artifact rows behind {@link rulesetSha256}. */
+  rulesetArtifacts?: RulesetArtifact[];
+  /** True for a live key, false for a blq_test_ sandbox key. */
+  livemode?: boolean;
 }
 
 export interface GenerateResult {
@@ -81,6 +105,10 @@ export interface GenerateResult {
   bytes: Uint8Array;
   /** UTF-8 decoded body, present only for an XML output. */
   xml?: string;
+  /** SHA-256 of the returned bytes. Present only when `seal` was requested. */
+  sha256?: string;
+  /** Validation verdict for the generated document. Present only when `seal` was requested. */
+  validationResult?: ValidationResult;
   meta: GenerateMeta;
 }
 
@@ -92,6 +120,8 @@ export interface ConvertMeta {
   lostElementsCount?: number;
   lostElements?: string[];
   conversionTools?: string;
+  /** True for a live key, false for a blq_test_ sandbox key. */
+  livemode?: boolean;
 }
 
 export interface ConvertResult {
@@ -100,11 +130,35 @@ export interface ConvertResult {
   meta: ConvertMeta;
 }
 
+/** Read the authoritative per-response mode from the x-beliq-livemode header. */
+function livemodeHeader(headers: Headers): boolean | undefined {
+  const raw = headers.get('x-beliq-livemode');
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  return undefined;
+}
+
+/** The x-ruleset-artifacts header is a JSON array of {key, version, fileSha256}. */
+function parseRulesetArtifacts(headers: Headers): RulesetArtifact[] | undefined {
+  const raw = headers.get('x-ruleset-artifacts');
+  if (!raw) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as RulesetArtifact[]) : undefined;
+  } catch {
+    // A non-JSON header is treated as absent rather than fatal.
+    return undefined;
+  }
+}
+
 function generateMeta(headers: Headers): GenerateMeta {
   return {
     schematronVersion: headers.get('x-schematron-version') ?? undefined,
     pdfKind: headers.get('x-pdf-kind') ?? undefined,
     outputEnvelope: headers.get('x-output-envelope') ?? undefined,
+    rulesetSha256: headers.get('x-ruleset-sha256') ?? undefined,
+    rulesetArtifacts: parseRulesetArtifacts(headers),
+    livemode: livemodeHeader(headers),
   };
 }
 
@@ -127,6 +181,7 @@ function convertMeta(headers: Headers): ConvertMeta {
     lostElementsCount: countRaw != null ? Number(countRaw) : undefined,
     lostElements,
     conversionTools: headers.get('x-conversion-tools') ?? undefined,
+    livemode: livemodeHeader(headers),
   };
 }
 
@@ -134,12 +189,20 @@ function convertMeta(headers: Headers): ConvertMeta {
 export class Beliq {
   readonly #config: ResolvedConfig;
 
+  /**
+   * True for a live key, false for a blq_test_ sandbox key, derived from the key
+   * prefix (the same rule the server applies). Available before any request; the
+   * per-response x-beliq-livemode header is surfaced on generate/convert meta.
+   */
+  readonly livemode: boolean;
+
   constructor(options: BeliqOptions) {
     if (!options?.apiKey) throw new Error('beliq: apiKey is required');
     const fetchImpl = options.fetch ?? globalThis.fetch;
     if (typeof fetchImpl !== 'function') {
       throw new Error('beliq: no global fetch available; pass options.fetch');
     }
+    this.livemode = !options.apiKey.startsWith(TEST_KEY_PREFIX);
     this.#config = {
       apiKey: options.apiKey,
       baseUrl: (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, ''),
@@ -155,14 +218,39 @@ export class Beliq {
 
   /** Generate a compliant e-invoice from an EN 16931 object. */
   async generate(input: GenerateInput): Promise<GenerateResult> {
-    const res = await send(this.#config, buildRequest({ operation: 'generate', ...input }));
+    const res = await send(
+      this.#config,
+      buildRequest({ operation: 'generate', ...input, sealed: input.seal }),
+    );
+    const meta = generateMeta(res.headers);
+
+    if (input.seal) {
+      const envelope = parseEnvelope(res.bytes);
+      if (envelope?.success === false) throw errorFromResponse(res.status, res.bytes);
+      const data = envelope?.data as GenerateResponse | undefined;
+      if (!data || data.output === undefined) {
+        throw new BeliqApiError('beliq: seal response was not a JSON envelope', {
+          status: res.status,
+        });
+      }
+      const bytes = decodeBase64(data.output);
+      const contentType = data.contentType ?? 'application/octet-stream';
+      return {
+        contentType,
+        bytes,
+        xml: contentType.includes('xml') ? decodeUtf8(bytes) : undefined,
+        sha256: data.sha256,
+        validationResult: data.validationResult,
+        meta,
+      };
+    }
+
     const contentType = res.headers.get('content-type') ?? 'application/octet-stream';
-    const isXml = contentType.includes('xml');
     return {
       contentType,
       bytes: res.bytes,
-      xml: isXml ? decodeUtf8(res.bytes) : undefined,
-      meta: generateMeta(res.headers),
+      xml: contentType.includes('xml') ? decodeUtf8(res.bytes) : undefined,
+      meta,
     };
   }
 
