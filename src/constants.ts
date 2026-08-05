@@ -7,6 +7,16 @@
 
 export const DEFAULT_BASE_URL = 'https://api.beliq.eu';
 
+/**
+ * Per-attempt deadline. Sits above the API's own worst case so the server is
+ * always the one to answer: a client that gives up first abandons work that is
+ * still running, and cannot tell whether the document was produced.
+ */
+export const DEFAULT_TIMEOUT_MS = 90_000;
+
+/** Extra attempts after the first, for 429 / 502 / 503 only. */
+export const DEFAULT_MAX_RETRIES = 3;
+
 export const LIVE_GENERATE_STANDARDS = ['xrechnung', 'zugferd', 'facturx', 'peppol-bis'] as const;
 
 /** A named generate target: the API `standard` plus the `profile`/`facturxProfile`/`output` it needs. */

@@ -64,6 +64,33 @@ const beliq = new Beliq({ apiKey: process.env.BELIQ_API_KEY! });
 if (!beliq.livemode) console.warn('running against the sandbox');
 ```
 
+## Timeouts and retries
+
+The client retries transient failures for you, so you do not have to reimplement
+backoff around it.
+
+```ts
+new Beliq({
+  apiKey: 'blq_live_...',
+  timeoutMs: 90_000,  // per-attempt deadline (default)
+  maxRetries: 3,      // extra attempts after the first (default)
+});
+```
+
+Only `429`, `502` and `503` are retried, honouring the server's `Retry-After`
+with jitter. beliq refunds the document's quota unit on a `503`, so a retry never
+costs you a second document.
+
+`504` and this client's own timeout are deliberately **not** retried: both mean
+the work may still be running on beliq's side, so retrying risks producing a
+second document rather than recovering the first.
+
+The default deadline is generous because beliq runs the full Schematron rule set
+over each document, and a generate or validate can legitimately take tens of
+seconds. If you lower it, keep it above the latency you actually see: a deadline
+shorter than the server's own turns completed work into an unknown outcome. Set
+`timeoutMs: 0` to disable it, and `maxRetries: 0` to handle retrying yourself.
+
 ## API
 
 | Method | Endpoint | Input | Returns |
