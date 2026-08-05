@@ -1,6 +1,6 @@
 import { buildRequest, type BuildParams } from './buildRequest';
 import { BeliqApiError, errorFromResponse, parseEnvelope } from './errors';
-import { DEFAULT_BASE_URL } from './constants';
+import { DEFAULT_BASE_URL, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT_MS } from './constants';
 import {
   sniffContentType,
   toBytes,
@@ -38,6 +38,21 @@ export interface BeliqOptions {
   auth?: 'header' | 'bearer';
   /** Inject a fetch implementation (tests, custom agents). Defaults to global fetch. */
   fetch?: typeof fetch;
+  /**
+   * Per-attempt deadline in ms (default 90000). Generous on purpose: beliq runs
+   * the full Schematron rule set over a document, so a generate or validate can
+   * take tens of seconds legitimately. Set well above the latency you expect —
+   * a deadline shorter than the server's own means giving up on work that is
+   * still running, which is the one case a retry can duplicate a document.
+   * 0 disables the deadline.
+   */
+  timeoutMs?: number;
+  /**
+   * Extra attempts after the first (default 3). Retries only 429, 502 and 503,
+   * honouring `Retry-After`; beliq refunds the quota unit on a 503, so a retry
+   * costs nothing. 0 disables retrying.
+   */
+  maxRetries?: number;
 }
 
 export interface GenerateInput {
@@ -208,6 +223,8 @@ export class Beliq {
       baseUrl: (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, ''),
       auth: options.auth ?? 'header',
       fetchImpl,
+      timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      maxRetries: options.maxRetries ?? DEFAULT_MAX_RETRIES,
     };
   }
 
