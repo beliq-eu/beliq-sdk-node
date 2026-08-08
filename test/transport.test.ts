@@ -10,6 +10,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Beliq } from '../src/client';
 import { BeliqApiError } from '../src/errors';
+import { DEFAULT_MAX_RETRIES } from '../src/index';
 
 const API_KEY = 'blq_test_key';
 
@@ -91,6 +92,19 @@ describe('transport retries', () => {
 
     await expect(client(fetchImpl as unknown as typeof fetch).me()).rejects.toThrow(BeliqApiError);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to the exported DEFAULT_MAX_RETRIES when none is given', async () => {
+    // The constant is public, so a caller can reason about the default without
+    // hardcoding it. That only holds if it is the value the client actually uses.
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(errorResponse(503, 'ENGINE_UNAVAILABLE', { 'retry-after': '0' })),
+    );
+
+    await expect(
+      new Beliq({ apiKey: API_KEY, fetch: fetchImpl as unknown as typeof fetch }).me(),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(fetchImpl).toHaveBeenCalledTimes(DEFAULT_MAX_RETRIES + 1);
   });
 });
 
