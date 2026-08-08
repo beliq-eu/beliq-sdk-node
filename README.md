@@ -77,6 +77,9 @@ new Beliq({
 });
 ```
 
+Both defaults are exported as `DEFAULT_TIMEOUT_MS` and `DEFAULT_MAX_RETRIES`, so
+you can derive from them instead of repeating the numbers.
+
 Only `429`, `502` and `503` are retried, honouring the server's `Retry-After`
 with jitter. beliq refunds the document's quota unit on a `503`, so a retry never
 costs you a second document.
