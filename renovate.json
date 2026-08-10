@@ -1,4 +1,21 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["local>beliq-eu/.github:automerge"]
+  "extends": ["local>beliq-eu/.github:automerge"],
+  "packageRules": [
+    {
+      "description": "@types/node tracks the engines floor (node >=20.15). Newer types would let Node-24-only APIs typecheck clean and then fail at runtime on a supported Node 20 consumer. Raise this together with engines.",
+      "matchPackageNames": ["@types/node"],
+      "allowedVersions": "^20"
+    },
+    {
+      "description": "typescript-eslint peers typescript <6.1.0 on both latest and canary, so TypeScript 6+ cannot resolve. Lift once typescript-eslint ships support.",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "^5"
+    },
+    {
+      "description": "The js-yaml override exists to dedupe the dev tree onto one copy. openapi-typescript pins @redocly/openapi-core ^1.34.x, which calls the js-yaml 4 `types.merge` export that js-yaml 5 removed; forcing 5 breaks `npm run openapi:check`. Lift once openapi-typescript moves to redocly 2.x.",
+      "matchPackageNames": ["js-yaml"],
+      "allowedVersions": "^4"
+    }
+  ]
 }
