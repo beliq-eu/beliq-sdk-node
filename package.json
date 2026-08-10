@@ -84,12 +84,12 @@
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^8.57.0",
     "openapi-typescript": "^7.4.0",
     "tsup": "^8.3.0",
     "typescript": "^5.5.4",
-    "vitest": "^3.0.0"
+    "vitest": "^4.0.0"
   }
 }
