@@ -177,6 +177,7 @@ export interface operations {
                                 limit: number;
                                 used: number;
                                 remaining: number;
+                                /** @description ISO 8601 UTC. When the counter resets: the end of the current quota window, one month anchored on the organization billing day. Only an organization billed on the 1st resets at the turn of the month. */
                                 resetsAt: string;
                             };
                         };
@@ -215,6 +216,27 @@ export interface operations {
             };
             /** @description Default Response */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -392,9 +414,31 @@ export interface operations {
             /** @description Default Response */
             200: {
                 headers: {
+                    /** @description Document syntax the engine detected: "ubl" or "cii". */
+                    "x-syntax"?: string;
+                    /** @description CIUS/profile the engine matched, e.g. "xrechnung_3.0". */
+                    "x-profile-detected"?: string;
+                    /** @description Version of the Schematron ruleset that produced the verdict. */
+                    "x-schematron-version"?: string;
+                    /** @description SHA-256 fingerprint of the rule artifacts the engine ran. Reproduce it from x-ruleset-artifacts to confirm the ruleset that judged you is the one beliq publicly pins (see GET /v1/rulesets). */
+                    "x-ruleset-sha256"?: string;
+                    /** @description One-line verdict, e.g. "pass · 0 err · 1 warn". */
+                    "x-validation"?: string;
+                    /** @description Compact JSON naming the ruleset/artifact versions pinned for the produced format. Descriptive only; conversion runs no validation over its output. */
+                    "x-version-block"?: string;
+                    /** @description The component rows x-ruleset-sha256 is built from, as "<key>@<version>=<fileSha256>" entries. Sort, join with newlines, and SHA-256 to reproduce the seal from published values alone. */
+                    "x-ruleset-artifacts"?: string;
+                    /** @description How the returned PDF was built: "hybrid" (PDF/A-3 with the XML embedded) or "visual" (rendered pages only). */
+                    "x-pdf-kind"?: string;
+                    /** @description "true" for a live key, "false" for a test key. Test-mode documents are watermarked and do not draw on the live monthly quota. */
+                    "x-beliq-livemode"?: string;
+                    /** @description Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record. */
+                    "x-request-id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/xml": string;
+                    "application/pdf": string;
                     "application/json": {
                         success: boolean;
                         data?: {
@@ -487,6 +531,48 @@ export interface operations {
                 };
             };
             /** @description Default Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -509,6 +595,27 @@ export interface operations {
             };
             /** @description Default Response */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -566,13 +673,32 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": unknown;
+                "application/xml": unknown;
+                "text/xml": unknown;
+                "application/octet-stream": unknown;
+                "application/pdf": unknown;
             };
         };
         responses: {
             /** @description Default Response */
             200: {
                 headers: {
+                    /** @description Document syntax the engine detected: "ubl" or "cii". */
+                    "x-syntax"?: string;
+                    /** @description CIUS/profile the engine matched, e.g. "xrechnung_3.0". */
+                    "x-profile-detected"?: string;
+                    /** @description Version of the Schematron ruleset that produced the verdict. */
+                    "x-schematron-version"?: string;
+                    /** @description SHA-256 fingerprint of the rule artifacts the engine ran. Reproduce it from x-ruleset-artifacts to confirm the ruleset that judged you is the one beliq publicly pins (see GET /v1/rulesets). */
+                    "x-ruleset-sha256"?: string;
+                    /** @description One-line verdict, e.g. "pass · 0 err · 1 warn". */
+                    "x-validation"?: string;
+                    /** @description The ruleset selection that actually applied, echoed back when the request carried a Beliq-Ruleset header. Reveals a "previous"→"latest" fallback. */
+                    "beliq-ruleset-resolved"?: string;
+                    /** @description "true" for a live key, "false" for a test key. Test-mode documents are watermarked and do not draw on the live monthly quota. */
+                    "x-beliq-livemode"?: string;
+                    /** @description Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record. */
+                    "x-request-id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -657,7 +783,91 @@ export interface operations {
                 };
             };
             /** @description Default Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -711,13 +921,30 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": unknown;
+                "application/xml": unknown;
+                "text/xml": unknown;
+                "application/octet-stream": unknown;
+                "application/pdf": unknown;
             };
         };
         responses: {
             /** @description Default Response */
             200: {
                 headers: {
+                    /** @description Document syntax the engine detected: "ubl" or "cii". */
+                    "x-syntax"?: string;
+                    /** @description CIUS/profile the engine matched, e.g. "xrechnung_3.0". */
+                    "x-profile-detected"?: string;
+                    /** @description Version of the Schematron ruleset that produced the verdict. */
+                    "x-schematron-version"?: string;
+                    /** @description SHA-256 fingerprint of the rule artifacts the engine ran. Reproduce it from x-ruleset-artifacts to confirm the ruleset that judged you is the one beliq publicly pins (see GET /v1/rulesets). */
+                    "x-ruleset-sha256"?: string;
+                    /** @description One-line verdict, e.g. "pass · 0 err · 1 warn". */
+                    "x-validation"?: string;
+                    /** @description "true" for a live key, "false" for a test key. Test-mode documents are watermarked and do not draw on the live monthly quota. */
+                    "x-beliq-livemode"?: string;
+                    /** @description Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record. */
+                    "x-request-id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -892,6 +1119,111 @@ export interface operations {
                 };
             };
             /** @description Default Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -928,10 +1260,43 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": unknown;
+                "application/xml": unknown;
+                "text/xml": unknown;
+                "application/octet-stream": unknown;
+                "application/pdf": unknown;
             };
         };
         responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    /** @description Format the engine read. */
+                    "x-source-format"?: string;
+                    /** @description Format the engine produced. */
+                    "x-target-format"?: string;
+                    /** @description CIUS/profile the engine matched, e.g. "xrechnung_3.0". */
+                    "x-profile-detected"?: string;
+                    /** @description How many source elements had no target equivalent. "0" means the conversion was lossless at the element level. */
+                    "x-lost-elements-count"?: string;
+                    /** @description JSON array naming the source elements that had no target equivalent, so a caller can decide whether the loss matters for their use. */
+                    "x-lost-elements"?: string;
+                    /** @description Toolchain that performed the conversion, for audit purposes. */
+                    "x-conversion-tools"?: string;
+                    /** @description Envelope the produced document is wrapped in, when it has one. */
+                    "x-output-envelope"?: string;
+                    /** @description Compact JSON naming the ruleset/artifact versions pinned for the produced format. Descriptive only; conversion runs no validation over its output. */
+                    "x-version-block"?: string;
+                    /** @description "true" for a live key, "false" for a test key. Test-mode documents are watermarked and do not draw on the live monthly quota. */
+                    "x-beliq-livemode"?: string;
+                    /** @description Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record. */
+                    "x-request-id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/xml": string;
+                    "application/pdf": string;
+                };
+            };
             /** @description Default Response */
             400: {
                 headers: {
@@ -954,7 +1319,91 @@ export interface operations {
                 };
             };
             /** @description Default Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1065,6 +1514,27 @@ export interface operations {
                             }[];
                         };
                         error?: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
                             code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
                             message: string;
                             details?: {
