@@ -155,6 +155,10 @@ export interface operations {
             /** @description Default Response */
             200: {
                 headers: {
+                    /** @description "true" for a live key, "false" for a test key. Test-mode documents are watermarked and do not draw on the live monthly quota. */
+                    "x-beliq-livemode"?: string;
+                    /** @description Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record. */
+                    "x-request-id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -447,7 +451,10 @@ export interface operations {
                             standard: string;
                             profile: string;
                             validationResult: {
+                                /** @description Whether the document was verified as valid. Read together with `verified`: `valid: false` with `verified: false` means no ruleset ran, not that the document failed. */
                                 valid: boolean;
+                                /** @description Whether a ruleset actually executed. `false` only when `verify: false` skipped validation, in which case `errors` and `warnings` are empty because nothing looked at the document. */
+                                verified?: boolean;
                                 format: "cii" | "ubl" | "fatturapa" | "facturae" | "eslog" | "sdi_messaggio" | "poland_ksef_fa2" | "poland_ksef_fa3" | "unknown";
                                 sha256?: string;
                                 rulesetSha256?: string;
@@ -705,7 +712,10 @@ export interface operations {
                     "application/json": {
                         success: boolean;
                         data?: {
+                            /** @description Whether the document was verified as valid. Read together with `verified`: `valid: false` with `verified: false` means no ruleset ran, not that the document failed. */
                             valid: boolean;
+                            /** @description Whether a ruleset actually executed. `false` only when `verify: false` skipped validation, in which case `errors` and `warnings` are empty because nothing looked at the document. */
+                            verified?: boolean;
                             format: "cii" | "ubl" | "fatturapa" | "facturae" | "eslog" | "sdi_messaggio" | "poland_ksef_fa2" | "poland_ksef_fa3" | "unknown";
                             sha256?: string;
                             rulesetSha256?: string;
@@ -1479,6 +1489,8 @@ export interface operations {
             /** @description Default Response */
             200: {
                 headers: {
+                    /** @description Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record. */
+                    "x-request-id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
