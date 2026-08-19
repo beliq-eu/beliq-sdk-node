@@ -55,8 +55,28 @@ try {
   process.exit(0);
 }
 
+/**
+ * Descriptive metadata, not client surface. `info.version` in particular is
+ * *replaced* on a bump rather than added to, and coverage cannot express a
+ * replacement — a vendored copy legitimately ahead of live reads as behind it,
+ * which is a red run for the one case this check is built to tolerate. The
+ * field is guarded by `test/spec-vendoring.test.ts` instead.
+ */
+const DESCRIPTIVE = ['info'];
+
+const surfaceOnly = (spec) => {
+  const out = { ...spec };
+  for (const key of DESCRIPTIVE) delete out[key];
+  return out;
+};
+
 const missing = [];
-coveredBy(JSON.parse(liveText), JSON.parse(readFileSync(vendored, 'utf8')), '', missing);
+coveredBy(
+  surfaceOnly(JSON.parse(liveText)),
+  surfaceOnly(JSON.parse(readFileSync(vendored, 'utf8'))),
+  '',
+  missing,
+);
 
 if (missing.length === 0) {
   console.log('vendored openapi.json covers the live spec');

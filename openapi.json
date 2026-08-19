@@ -3,7 +3,7 @@
   "info": {
     "title": "beliq API",
     "description": "EU e-invoicing platform. Generate, validate, parse, and convert EN 16931 invoices against authority-pinned, nightly-drift-checked rules. beliq produces and checks the compliant document; transmission (Peppol, PDP, KSeF, SDI), archiving, and tax-authority reporting stay with your access point.",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "components": {
     "securitySchemes": {
@@ -92,6 +92,20 @@
         "responses": {
           "200": {
             "description": "Default Response",
+            "headers": {
+              "x-beliq-livemode": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "\"true\" for a live key, \"false\" for a test key. Test-mode documents are watermarked and do not draw on the live monthly quota."
+              },
+              "x-request-id": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -2396,6 +2410,11 @@
                           ],
                           "properties": {
                             "valid": {
+                              "description": "Whether the document was verified as valid. Read together with `verified`: `valid: false` with `verified: false` means no ruleset ran, not that the document failed.",
+                              "type": "boolean"
+                            },
+                            "verified": {
+                              "description": "Whether a ruleset actually executed. `false` only when `verify: false` skipped validation, in which case `errors` and `warnings` are empty because nothing looked at the document.",
                               "type": "boolean"
                             },
                             "format": {
@@ -5115,6 +5134,11 @@
                       ],
                       "properties": {
                         "valid": {
+                          "description": "Whether the document was verified as valid. Read together with `verified`: `valid: false` with `verified: false` means no ruleset ran, not that the document failed.",
+                          "type": "boolean"
+                        },
+                        "verified": {
+                          "description": "Whether a ruleset actually executed. `false` only when `verify: false` skipped validation, in which case `errors` and `warnings` are empty because nothing looked at the document.",
                           "type": "boolean"
                         },
                         "format": {
@@ -13280,6 +13304,14 @@
         "responses": {
           "200": {
             "description": "Default Response",
+            "headers": {
+              "x-request-id": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
