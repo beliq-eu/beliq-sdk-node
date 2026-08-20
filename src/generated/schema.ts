@@ -466,6 +466,8 @@ export interface operations {
                                 /** Format: date-time */
                                 driftCheckedAt?: string;
                                 profileDetected?: string;
+                                verificationTier?: "conformance-verified" | "builder-round-trip" | "reconstructed-rules" | "xsd-structural";
+                                verificationBadge?: "authority-verified" | "independently-rule-checked" | "structure-checked";
                                 schematronVersion?: string;
                                 ciusVersion?: string;
                                 peppolVersion?: string;
@@ -732,6 +734,8 @@ export interface operations {
                             /** Format: date-time */
                             driftCheckedAt?: string;
                             profileDetected?: string;
+                            verificationTier?: "conformance-verified" | "builder-round-trip" | "reconstructed-rules" | "xsd-structural";
+                            verificationBadge?: "authority-verified" | "independently-rule-checked" | "structure-checked";
                             schematronVersion?: string;
                             ciusVersion?: string;
                             peppolVersion?: string;
