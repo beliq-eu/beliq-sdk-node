@@ -266,13 +266,13 @@ describe('Beliq client', () => {
   it('throws BeliqApiError with the typed code on a 4xx (JSON endpoint)', async () => {
     const { fetchImpl } = mock(() => ({ status: 400, body: fixture('error-validation-error.json') }));
     const err = await new Beliq({ apiKey, fetch: fetchImpl })
-      .validate('not xml')
+      .validate('<x/>', { franceCtc: true })
       .catch((e: unknown) => e);
     expect(err).toBeInstanceOf(BeliqApiError);
     const apiErr = err as BeliqApiError;
     expect(apiErr.code).toBe('VALIDATION_ERROR');
     expect(apiErr.status).toBe(400);
-    expect(apiErr.message).toContain('not well-formed');
+    expect(apiErr.message).toContain('must be boolean');
     expect(apiErr.details?.fields).toHaveLength(1);
   });
 
