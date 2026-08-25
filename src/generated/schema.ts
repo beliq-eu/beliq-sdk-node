@@ -608,6 +608,27 @@ export interface operations {
                 };
             };
             /** @description Default Response */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "FRENCH_DOMESTIC_FLOW" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -829,6 +850,27 @@ export interface operations {
             };
             /** @description Default Response */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "FRENCH_DOMESTIC_FLOW" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1185,6 +1227,27 @@ export interface operations {
                 };
             };
             /** @description Default Response */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "FRENCH_DOMESTIC_FLOW" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
             415: {
                 headers: {
                     [name: string]: unknown;
@@ -1365,6 +1428,27 @@ export interface operations {
             };
             /** @description Default Response */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        error: {
+                            code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "UNSUPPORTED_FORMAT" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "INVALID_XML" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "FRENCH_DOMESTIC_FLOW" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
+                            message: string;
+                            details?: {
+                                [key: string]: unknown;
+                            };
+                            /** @description Support correlation ID, present on 5xx responses only. Quote it when contacting support. */
+                            incidentId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
