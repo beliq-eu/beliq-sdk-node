@@ -264,25 +264,28 @@ describe('Beliq client', () => {
   });
 
   it('throws BeliqApiError with the typed code on a 4xx (JSON endpoint)', async () => {
-    const { fetchImpl } = mock(() => ({ status: 400, body: fixture('error-invalid-xml.json') }));
+    const { fetchImpl } = mock(() => ({ status: 400, body: fixture('error-validation-error.json') }));
     const err = await new Beliq({ apiKey, fetch: fetchImpl })
-      .validate('not xml')
+      .validate('<x/>', { franceCtc: true })
       .catch((e: unknown) => e);
     expect(err).toBeInstanceOf(BeliqApiError);
     const apiErr = err as BeliqApiError;
-    expect(apiErr.code).toBe('INVALID_XML');
+    expect(apiErr.code).toBe('VALIDATION_ERROR');
     expect(apiErr.status).toBe(400);
-    expect(apiErr.message).toContain('not well-formed');
-    expect(apiErr.details).toEqual({ line: 1 });
+    expect(apiErr.message).toContain('must be boolean');
+    expect(apiErr.details?.fields).toHaveLength(1);
   });
 
   it('parses the error envelope even when a binary endpoint fails', async () => {
-    const { fetchImpl } = mock(() => ({ status: 422, body: fixture('error-invalid-xml.json') }));
+    const { fetchImpl } = mock(() => ({
+      status: 422,
+      body: fixture('error-conversion-unsupported-pair.json'),
+    }));
     const err = await new Beliq({ apiKey, fetch: fetchImpl })
       .convert('<x/>', { targetFormat: 'ubl' })
       .catch((e: unknown) => e);
     expect(err).toBeInstanceOf(BeliqApiError);
-    expect((err as BeliqApiError).code).toBe('INVALID_XML');
+    expect((err as BeliqApiError).code).toBe('CONVERSION_UNSUPPORTED_PAIR');
     expect((err as BeliqApiError).status).toBe(422);
   });
 });
