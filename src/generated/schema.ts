@@ -167,21 +167,25 @@ export interface operations {
                         data?: {
                             keyId: string | null;
                             keyPrefix: string | null;
+                            /** @description False for a blq_test_ key, true otherwise. Selects which allowance the quota block below describes: a live key spends the plan quota over a window anchored on the organization billing day, a test key the flat sandbox allowance over the UTC calendar month. Mirrors the x-beliq-livemode response header, for callers that only see a parsed body. */
+                            livemode: boolean;
                             org: {
                                 id: string;
                                 name: string;
                                 rulesetChannel: "latest" | "previous";
                             };
                             plan: {
+                                /** @description The subscription_plans row the organization references, or null when it references none, which is every organization on the free tier. */
                                 id: number | null;
-                                name: string | null;
+                                /** @description Never null. An organization that references no plan row is on the free tier and reads back under the free tier name. */
+                                name: string;
                             };
                             rateLimitPerMinute: number;
                             quota: {
                                 limit: number;
                                 used: number;
                                 remaining: number;
-                                /** @description ISO 8601 UTC. When the counter resets: the end of the current quota window, one month anchored on the organization billing day. Only an organization billed on the 1st resets at the turn of the month. */
+                                /** @description ISO 8601 UTC. The end of the window limit and used were counted over. On a live key that window is one month anchored on the organization billing day, so only an organization billed on the 1st resets at the turn of the month; on a test key it is the turn of the UTC month. */
                                 resetsAt: string;
                             };
                         };
