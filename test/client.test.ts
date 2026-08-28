@@ -77,6 +77,11 @@ describe('Beliq client', () => {
     expect(calls[0].headers['Authorization']).toBeUndefined();
     expect(acct.org.name).toBe('Acme GmbH');
     expect(acct.quota.remaining).toBe(9863);
+    // Which allowance `quota` describes. A caller that only sees a parsed body
+    // has no other way to tell: the x-beliq-livemode header is not in it, and
+    // keyPrefix is null on the dashboard-assertion path.
+    expect(acct.livemode).toBe(true);
+    expect(acct.quota.resetsAt).toBe('2026-09-14T09:00:00.000Z');
   });
 
   it('strips a trailing slash from a custom baseUrl', async () => {

@@ -37,4 +37,29 @@ describe('vendored openapi.json', () => {
     expect(spec.info.version).toBeTruthy();
     expect(spec.info.version).not.toBe('0.1.0');
   });
+
+  /**
+   * The `me.json` fixture is what every `me()` test parses, so it decides what
+   * this SDK is proven to handle. It had drifted three fields behind the wire
+   * (`livemode`, `org.rulesetChannel`, `quota.resetsAt`) while every test stayed
+   * green, because a mock returns whatever the fixture says and nothing compared
+   * it to the contract.
+   *
+   * Set equality against the spec's own `required` list, so a fixture that omits
+   * a field fails as loudly as one that invents it. Top-level keys of `data`:
+   * the nested objects are not walked, which is the same line the beliq-docs
+   * gate draws.
+   */
+  it('the me() fixture carries exactly the fields /v1/me returns', () => {
+    const spec = JSON.parse(readFileSync(vendored, 'utf8'));
+    const envelope =
+      spec.paths['/v1/me'].get.responses['200'].content['application/json'].schema;
+    const required: string[] = envelope.properties.data.required;
+    expect(required.length).toBeGreaterThan(0);
+
+    const fixtureData = JSON.parse(
+      readFileSync(join(root, 'test', 'fixtures', 'me.json'), 'utf8'),
+    ).data;
+    expect(Object.keys(fixtureData).sort()).toEqual([...required].sort());
+  });
 });
