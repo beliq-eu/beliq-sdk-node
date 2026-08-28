@@ -1,49 +1,19 @@
 // Fails when the vendored openapi.json has fallen BEHIND the deployed live spec.
 // `openapi:check` only compares the generated types to the vendored spec; this
-// catches the vendored spec itself going stale. Run on a schedule.
+// catches the vendored spec itself going stale. Runs on every change and weekly.
 //
-// The test is directional: it fails only when the live spec carries surface the
-// vendored copy is missing (a new path, operation, field, or enum value). A
-// vendored copy that is AHEAD of live (changes merged but not yet deployed)
-// passes quietly, so manual deploys never turn this red. A network failure is a
-// soft pass (warn, exit 0) so a hiccup never cries wolf.
+// The comparison lives in `lib/spec-surface.mjs`, which explains what counts as
+// surface and why values are never compared; `test/spec-surface.test.mjs` pins
+// the behaviour in both directions. A network failure is a soft pass (warn,
+// exit 0) so a hiccup never cries wolf.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { surfaceMissingFrom } from './lib/spec-surface.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const vendored = join(root, 'openapi.json');
 const LIVE_URL = 'https://api.beliq.eu/openapi.json';
-
-/** Is every value in `live` present in `vendored`? (objects by key, arrays by element, scalars by equality). */
-function coveredBy(live, vendored, path, missing) {
-  if (Array.isArray(live)) {
-    if (!Array.isArray(vendored)) {
-      missing.push(path);
-      return;
-    }
-    for (const item of live) {
-      if (!vendored.some((cand) => isCovered(item, cand))) missing.push(`${path}[${JSON.stringify(item)}]`);
-    }
-    return;
-  }
-  if (live && typeof live === 'object') {
-    if (!vendored || typeof vendored !== 'object' || Array.isArray(vendored)) {
-      missing.push(path);
-      return;
-    }
-    for (const key of Object.keys(live)) coveredBy(live[key], vendored[key], path ? `${path}.${key}` : key, missing);
-    return;
-  }
-  if (live !== vendored) missing.push(path);
-}
-
-/** Boolean form used for array-element matching. */
-function isCovered(live, vendored) {
-  const missing = [];
-  coveredBy(live, vendored, '', missing);
-  return missing.length === 0;
-}
 
 let liveText;
 try {
@@ -55,27 +25,9 @@ try {
   process.exit(0);
 }
 
-/**
- * Descriptive metadata, not client surface. `info.version` in particular is
- * *replaced* on a bump rather than added to, and coverage cannot express a
- * replacement — a vendored copy legitimately ahead of live reads as behind it,
- * which is a red run for the one case this check is built to tolerate. The
- * field is guarded by `test/spec-vendoring.test.ts` instead.
- */
-const DESCRIPTIVE = ['info'];
-
-const surfaceOnly = (spec) => {
-  const out = { ...spec };
-  for (const key of DESCRIPTIVE) delete out[key];
-  return out;
-};
-
-const missing = [];
-coveredBy(
-  surfaceOnly(JSON.parse(liveText)),
-  surfaceOnly(JSON.parse(readFileSync(vendored, 'utf8'))),
-  '',
-  missing,
+const missing = surfaceMissingFrom(
+  JSON.parse(liveText),
+  JSON.parse(readFileSync(vendored, 'utf8')),
 );
 
 if (missing.length === 0) {
