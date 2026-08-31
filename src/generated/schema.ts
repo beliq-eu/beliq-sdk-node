@@ -479,6 +479,8 @@ export interface operations {
                                 facturxVersion?: string;
                                 franceCtcApplied?: boolean;
                                 franceCtcVersion?: string;
+                                franceExtendedCtcApplied?: boolean;
+                                franceCtcBlockingRuleIds?: string[];
                                 italyFatturapaXsdBundle?: string;
                                 italyFatturapaRuntimeVersion?: string;
                                 italySdiMessaggiXsdBundle?: string;
@@ -768,6 +770,8 @@ export interface operations {
                             facturxVersion?: string;
                             franceCtcApplied?: boolean;
                             franceCtcVersion?: string;
+                            franceExtendedCtcApplied?: boolean;
+                            franceCtcBlockingRuleIds?: string[];
                             italyFatturapaXsdBundle?: string;
                             italyFatturapaRuntimeVersion?: string;
                             italySdiMessaggiXsdBundle?: string;
