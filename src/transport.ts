@@ -31,6 +31,22 @@ export interface RawResponse {
  */
 const RETRYABLE_STATUSES = new Set([429, 502, 503]);
 
+/**
+ * The one 429 waiting cannot clear. `RATE_LIMITED` frees up in seconds and
+ * `ACCOUNT_THROTTLED` in minutes, but a spent monthly allowance only returns when
+ * the billing window turns, and beliq says so honestly: its `Retry-After` on this
+ * code is the seconds remaining in the window, which can be weeks. Retrying spends
+ * `maxRetries` sleeps of `MAX_RETRY_AFTER_MS` each against a refusal that is
+ * already final, and whatever wraps the call usually times out first, so the caller
+ * is told the request hung rather than that the quota is gone.
+ */
+const QUOTA_EXHAUSTED_CODE = 'QUOTA_EXCEEDED';
+
+function isRetryable(status: number, code?: string): boolean {
+  if (!RETRYABLE_STATUSES.has(status)) return false;
+  return !(status === 429 && code === QUOTA_EXHAUSTED_CODE);
+}
+
 /** Ceiling on a server-supplied `Retry-After`, so one header cannot hang a call for minutes. */
 const MAX_RETRY_AFTER_MS = 30_000;
 
@@ -114,12 +130,13 @@ export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<R
       const bytes = new Uint8Array(await res.arrayBuffer());
       if (res.ok) return { status: res.status, headers: res.headers, bytes };
 
-      lastError = errorFromResponse(res.status, bytes);
-      if (!RETRYABLE_STATUSES.has(res.status) || attempt === config.maxRetries) {
-        throw lastError;
+      const apiError = errorFromResponse(res.status, bytes);
+      lastError = apiError;
+      if (!isRetryable(apiError.status, apiError.code) || attempt === config.maxRetries) {
+        throw apiError;
       }
     } catch (err) {
-      if (err instanceof BeliqApiError && !RETRYABLE_STATUSES.has(err.status)) throw err;
+      if (err instanceof BeliqApiError && !isRetryable(err.status, err.code)) throw err;
       // An abort is this client's own deadline, not a server fault: the request
       // may have been received and be running, so retrying risks a duplicate.
       if (controller.signal.aborted) {
