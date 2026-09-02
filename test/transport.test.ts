@@ -52,6 +52,35 @@ describe('transport retries', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  it('does not retry a 429 whose body says the monthly quota is spent', async () => {
+    // The `Retry-After` here is the real shape: seconds to the end of the billing
+    // window. Retrying it sleeps at the 30s ceiling three times and then surfaces a
+    // timeout from whatever wraps the call, hiding the message that names the cause.
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        errorResponse(429, 'QUOTA_EXCEEDED', { 'retry-after': String(29 * 24 * 60 * 60) }),
+      );
+
+    await expect(client(fetchImpl as unknown as typeof fetch, { maxRetries: 3 }).me()).rejects.toMatchObject({
+      status: 429,
+      code: 'QUOTA_EXCEEDED',
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('still retries the two 429s that waiting does clear', async () => {
+    for (const code of ['RATE_LIMITED', 'ACCOUNT_THROTTLED']) {
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValueOnce(errorResponse(429, code, { 'retry-after': '0' }))
+        .mockResolvedValueOnce(jsonResponse({ success: true, data: { plan: 'free' } }));
+
+      await client(fetchImpl as unknown as typeof fetch, { maxRetries: 2 }).me();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    }
+  });
+
   it('does not retry a 504', async () => {
     // The one status where a retry can duplicate a document: the work may still
     // be running server-side, so the safe move is to surface it.
