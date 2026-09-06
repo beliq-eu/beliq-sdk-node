@@ -107,7 +107,7 @@ export interface paths {
         };
         /**
          * Active ruleset/artefact versions + ruleset-hash catalog per supported format (public, no quota cost).
-         * @description Public reference for the ruleset versions and artifact hashes Beliq pins. `artifacts` is the ruleset-hash catalog: each rule artifact that can run for a publicly-supported format, with the SHA-256 of its exact file bytes. To verify a `POST /v1/validate` response for a publicly-supported format, confirm each of its `rulesetArtifacts` components appears here, then reproduce its `rulesetSha256` by sorting the components’ `"<key>@<version>=<fileSha256>"` lines, joining with newlines, and taking the SHA-256. (The `rulesetSha256` reproduction needs only the response’s own components, so it holds for any result. Formats beliq carries on no public surface run real, pinned artifacts that are intentionally omitted here, so their components will not appear in this catalog.) For compiled-Schematron families the published hash proves the artifact Beliq ran is the one Beliq pins, not a value reproducible from the authority’s raw source.
+         * @description Public reference for the ruleset versions and artifact hashes Beliq pins. `artifacts` is the ruleset-hash catalog: each rule artifact that can run for a publicly-supported format, with the SHA-256 of its exact file bytes. To verify a `POST /v1/validate` response for a publicly-supported format, confirm each of its `rulesetArtifacts` components appears here, then reproduce its `rulesetSha256` by sorting the components’ `"<key>@<version>=<fileSha256>"` lines, joining with newlines, and taking the SHA-256. (The `rulesetSha256` reproduction needs only the response’s own components, so it holds for any result. Formats beliq carries on no public surface run real, pinned artifacts that are intentionally omitted here, so their components will not appear in this catalog.) For compiled-Schematron families the published hash proves the artifact Beliq ran is the one Beliq pins, not a value reproducible from the authority’s raw source. `scheduledChanges` lists announced bumps that have not taken effect yet; each row names both the `formats` and the `capabilities` the changing artifact judges, and a bump can reach you through a capability alone.
          */
         get: operations["getRulesets"];
         put?: never;
@@ -1628,6 +1628,7 @@ export interface operations {
                             scheduledChanges: {
                                 versionKey: string;
                                 formats: string[];
+                                capabilities: string[];
                                 from: string;
                                 to: string;
                                 /** @description ISO 8601 date (YYYY-MM-DD). When `latest` moves from `from` to `to`. */
