@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { Beliq } from '../src/index';
 import type { Invoice } from '../src/index';
@@ -8,30 +9,9 @@ import type { Invoice } from '../src/index';
 const apiKey = process.env.BELIQ_API_KEY;
 const run = apiKey ? describe : describe.skip;
 
-const invoice: Invoice = {
-  number: 'IT-2026-001',
-  issueDate: '2026-01-15',
-  dueDate: '2026-02-14',
-  currencyCode: 'EUR',
-  buyerReference: 'LEITWEG-01',
-  seller: {
-    name: 'Seller GmbH',
-    vatId: 'DE123456789',
-    address: { street: 'Hauptstrasse 1', city: 'Berlin', postalCode: '10115', countryCode: 'DE' },
-  },
-  buyer: {
-    name: 'Buyer GmbH',
-    vatId: 'DE987654321',
-    address: { street: 'Marktplatz 2', city: 'Munich', postalCode: '80331', countryCode: 'DE' },
-  },
-  lines: [
-    { description: 'Consulting', quantity: 10, unitCode: 'HUR', unitPrice: 100, lineTotal: 1000, vatRate: 19, vatCategoryCode: 'S' },
-  ],
-  taxSummary: [{ vatCategoryCode: 'S', vatRate: 19, taxableAmount: 1000, taxAmount: 190 }],
-  totalNetAmount: 1000,
-  totalTaxAmount: 190,
-  totalGrossAmount: 1190,
-};
+const invoice: Invoice = JSON.parse(
+  readFileSync(new URL('../examples/invoice.json', import.meta.url), 'utf8'),
+) as Invoice;
 
 run('beliq live API', () => {
   const beliq = new Beliq({
