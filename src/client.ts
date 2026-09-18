@@ -41,7 +41,7 @@ export interface BeliqOptions {
   /**
    * Per-attempt deadline in ms (default 90000). Generous on purpose: beliq runs
    * the full Schematron rule set over a document, so a generate or validate can
-   * take tens of seconds legitimately. Set well above the latency you expect —
+   * take tens of seconds legitimately. Set well above the latency you expect:
    * a deadline shorter than the server's own means giving up on work that is
    * still running, which is the one case a retry can duplicate a document.
    * 0 disables the deadline.

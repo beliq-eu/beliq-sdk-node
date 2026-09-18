@@ -185,6 +185,7 @@ npm install
 npm run build       # tsup: dual ESM + CJS + d.ts
 npm run typecheck
 npm run lint
+npm run scrub:check   # no em-dash in any tracked file
 npm test            # unit tests (no network)
 BELIQ_API_KEY=blq_xxx npm run test:integration   # hits the live API; draws quota
 ```

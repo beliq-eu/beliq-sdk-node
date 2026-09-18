@@ -70,6 +70,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test",
     "lint:fix": "eslint src test --fix",
+    "scrub:check": "bash scripts/scrub-check.sh",
     "sync:spec": "node scripts/sync-spec.mjs",
     "gen:types": "node scripts/gen-types.mjs",
     "openapi:check": "node scripts/gen-types.mjs --check",

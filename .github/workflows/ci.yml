@@ -24,6 +24,7 @@ jobs:
       - run: npm run build
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run scrub:check
       # Fails if src/generated/schema.ts drifts from openapi.json.
       - run: npm run openapi:check
       - run: npm test
