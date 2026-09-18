@@ -1661,6 +1661,18 @@ export interface operations {
                                 releaseDate: string | null;
                                 repo: string | null;
                                 tag: string | null;
+                                /** @description Versions of this format's artefact still on disk but no longer served, oldest first. Empty for a format whose artefact has never had a breaking bump, and empty for one inside a notice period, where the outgoing release is still what `rulesetVersion` names. */
+                                retained: {
+                                    version: string;
+                                    /** @description ISO 8601 date (YYYY-MM-DD) the authority released this version, or null when it publishes none. */
+                                    releaseDate: string | null;
+                                    /** @description ISO 8601 date (YYYY-MM-DD) Beliq started serving this version as `latest`. */
+                                    servingFrom: string;
+                                    /** @description ISO 8601 date (YYYY-MM-DD) after which this version is no longer served at all, or null when nothing retires it. The last day an exact pin resolves; after it, the pin returns a 422. */
+                                    retainedUntil: string | null;
+                                    /** @description ISO 8601 date (YYYY-MM-DD) the authority made this version's successor mandatory, or null when it published no date. Once it has passed, `Beliq-Ruleset: previous` no longer resolves to this version and sets `rulesetFellBack: true`, because a document built to it is rejected by the receiving corner. An exact version pin is unaffected and still reaches it until `retainedUntil`. */
+                                    supersededMandatoryOn: string | null;
+                                }[];
                             }[];
                             channels: {
                                 id: "latest" | "previous";
