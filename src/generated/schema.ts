@@ -285,6 +285,8 @@ export interface operations {
                         issueDate: string;
                         dueDate?: string;
                         currencyCode: string;
+                        taxCurrencyCode?: string;
+                        taxTotalInAccountingCurrency?: number;
                         documentType?: "invoice" | "creditnote";
                         precedingInvoiceReference?: {
                             id: string;
@@ -1054,6 +1056,8 @@ export interface operations {
                                 issueDate: string;
                                 dueDate?: string;
                                 currencyCode: string;
+                                taxCurrencyCode?: string;
+                                taxTotalInAccountingCurrency?: number;
                                 documentType?: "invoice" | "creditnote";
                                 precedingInvoiceReference?: {
                                     id: string;
