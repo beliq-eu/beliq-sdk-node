@@ -132,6 +132,23 @@ export interface components {
             vatCategoryCode: string;
             itemId?: string;
             buyerItemId?: string;
+            grossPrice?: number;
+            priceDiscount?: number;
+            priceBaseQuantity?: number;
+            standardItemId?: {
+                id: string;
+                schemeId: string;
+            };
+            classifications?: {
+                code: string;
+                listId: string;
+                listVersionId?: string;
+            }[];
+            originCountryCode?: string;
+            attributes?: {
+                name: string;
+                value: string;
+            }[];
             subLines?: components["schemas"]["InvoiceLine"][];
         };
     };
@@ -355,6 +372,23 @@ export interface operations {
                             vatCategoryCode: string;
                             itemId?: string;
                             buyerItemId?: string;
+                            grossPrice?: number;
+                            priceDiscount?: number;
+                            priceBaseQuantity?: number;
+                            standardItemId?: {
+                                id: string;
+                                schemeId: string;
+                            };
+                            classifications?: {
+                                code: string;
+                                listId: string;
+                                listVersionId?: string;
+                            }[];
+                            originCountryCode?: string;
+                            attributes?: {
+                                name: string;
+                                value: string;
+                            }[];
                             subLines?: components["schemas"]["InvoiceLine"][];
                         }[];
                         taxSummary?: {
@@ -1126,6 +1160,23 @@ export interface operations {
                                     vatCategoryCode: string;
                                     itemId?: string;
                                     buyerItemId?: string;
+                                    grossPrice?: number;
+                                    priceDiscount?: number;
+                                    priceBaseQuantity?: number;
+                                    standardItemId?: {
+                                        id: string;
+                                        schemeId: string;
+                                    };
+                                    classifications?: {
+                                        code: string;
+                                        listId: string;
+                                        listVersionId?: string;
+                                    }[];
+                                    originCountryCode?: string;
+                                    attributes?: {
+                                        name: string;
+                                        value: string;
+                                    }[];
                                     subLines?: components["schemas"]["InvoiceLine"][];
                                 }[];
                                 taxSummary?: {
