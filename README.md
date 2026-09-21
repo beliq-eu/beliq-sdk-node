@@ -192,7 +192,7 @@ BELIQ_API_KEY=blq_xxx npm run test:integration   # hits the live API; draws quot
 
 ## Publishing
 
-Released to npm as [`@beliq/sdk`](https://www.npmjs.com/package/@beliq/sdk). Releases run from `.github/workflows/release.yml` via npm Trusted Publishing (OIDC, with provenance): push a `v*.*.*` tag to publish. No npm token is stored in the repo.
+Released to npm as [`@beliq/sdk`](https://www.npmjs.com/package/@beliq/sdk). Releases run from `.github/workflows/release.yml` via npm Trusted Publishing (OIDC, with provenance): bump `version` in `package.json`, run `npm install --package-lock-only`, add the release's entry to [`CHANGELOG.md`](CHANGELOG.md), merge, then push a `v*.*.*` tag on the merge commit to publish. No npm token is stored in the repo.
 
 ## License
 
