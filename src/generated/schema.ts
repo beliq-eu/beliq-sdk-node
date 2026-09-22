@@ -52,7 +52,7 @@ export interface paths {
         put?: never;
         /**
          * Validate an XML or PDF e-invoice against the authority-pinned rules.
-         * @description The JSON response carries two verifiability hashes so you can check the result yourself. `sha256` is the lowercase-hex SHA-256 of the exact bytes you posted; run `sha256sum` on your file to reproduce it and confirm round-trip integrity. `rulesetSha256` fingerprints the rule artifacts the engine ran to judge the document (the compiled Schematron XSLT(s) for the EN 16931 family and its CIUS/national overlays, or the authority root XSD for XSD-only national formats), so you can confirm the ruleset that judged you is the one beliq publicly pins (see GET /v1/rulesets). `rulesetSha256` is present whenever a ruleset ran. `rulesetArtifacts` lists the component rows it is built from (`{ key, version, fileSha256 }` each): sort the `"<key>@<version>=<fileSha256>"` lines, join with newlines, and SHA-256 to reproduce `rulesetSha256` from these published values alone. That reproduction works for every result; the separate step of matching each component against the GET /v1/rulesets catalog covers publicly-supported formats only — a provisional national format (e.g. Italy FatturaPA) returns real, pinned components that are intentionally kept off the public catalog, so they will not appear there. `driftCheckedAt` is an ISO 8601 UTC instant reporting when those pinned artifacts were last confirmed to still match their upstream authority sources (the nightly drift check): where `rulesetSha256` proves the artifact we ran is the one we pin, `driftCheckedAt` says when we last confirmed that pin still matches what the authority publishes. It is a conservative lower bound ("verified at least as recently as"), present alongside `rulesetSha256` only when every pinned artifact cleared that check.
+         * @description The JSON response carries two verifiability hashes so you can check the result yourself. `sha256` is the lowercase-hex SHA-256 of the exact bytes you posted; run `sha256sum` on your file to reproduce it and confirm round-trip integrity. `rulesetSha256` fingerprints the rule artifacts the engine ran to judge the document (the compiled Schematron XSLT(s) for the EN 16931 family and its CIUS/national overlays, or the authority root XSD for XSD-only national formats), so you can confirm the ruleset that judged you is the one beliq publicly pins (see GET /v1/rulesets). `rulesetSha256` is present whenever a ruleset ran. `rulesetArtifacts` lists the component rows it is built from (`{ key, version, fileSha256 }` each): sort the `"<key>@<version>=<fileSha256>"` lines, join with newlines, and SHA-256 to reproduce `rulesetSha256` from these published values alone. That reproduction works for every result; the separate step of matching each component against the GET /v1/rulesets catalog covers publicly-supported formats only. A provisional national format (e.g. Italy FatturaPA) returns real, pinned components that are intentionally kept off the public catalog, so they will not appear there. `driftCheckedAt` is an ISO 8601 UTC instant reporting when those pinned artifacts were last confirmed to still match their upstream authority sources (the nightly drift check): where `rulesetSha256` proves the artifact we ran is the one we pin, `driftCheckedAt` says when we last confirmed that pin still matches what the authority publishes. It is a conservative lower bound ("verified at least as recently as"), present alongside `rulesetSha256` only when every pinned artifact cleared that check.
          */
         post: operations["validateInvoice"];
         delete?: never;
@@ -148,6 +148,20 @@ export interface components {
             attributes?: {
                 name: string;
                 value: string;
+            }[];
+            allowances?: {
+                amount: number;
+                baseAmount?: number;
+                percentage?: number;
+                reason?: string;
+                reasonCode?: string;
+            }[];
+            charges?: {
+                amount: number;
+                baseAmount?: number;
+                percentage?: number;
+                reason?: string;
+                reasonCode?: string;
             }[];
             subLines?: components["schemas"]["InvoiceLine"][];
         };
@@ -389,6 +403,20 @@ export interface operations {
                                 name: string;
                                 value: string;
                             }[];
+                            allowances?: {
+                                amount: number;
+                                baseAmount?: number;
+                                percentage?: number;
+                                reason?: string;
+                                reasonCode?: string;
+                            }[];
+                            charges?: {
+                                amount: number;
+                                baseAmount?: number;
+                                percentage?: number;
+                                reason?: string;
+                                reasonCode?: string;
+                            }[];
                             subLines?: components["schemas"]["InvoiceLine"][];
                         }[];
                         taxSummary?: {
@@ -427,6 +455,24 @@ export interface operations {
                             debitedAccountId?: string;
                         };
                         paymentTerms?: string;
+                        allowances?: {
+                            amount: number;
+                            baseAmount?: number;
+                            percentage?: number;
+                            reason?: string;
+                            reasonCode?: string;
+                            vatCategoryCode: string;
+                            vatRate?: number;
+                        }[];
+                        charges?: {
+                            amount: number;
+                            baseAmount?: number;
+                            percentage?: number;
+                            reason?: string;
+                            reasonCode?: string;
+                            vatCategoryCode: string;
+                            vatRate?: number;
+                        }[];
                         totalNetAmount: number;
                         totalTaxAmount: number;
                         totalGrossAmount: number;
@@ -763,7 +809,7 @@ export interface operations {
                 franceCtc?: boolean;
             };
             header?: {
-                /** @description Pin the validation ruleset for this request. A channel ("latest" or "previous"), or a comma-separated list of exact per-format pins as "<artifactKey>:<version>" (e.g. "xrechnung_schematron:2.4.0"). The two forms are mutually exclusive. Default (no header) uses "latest". Effective on this route only — parse/generate/convert accept but ignore it. The applied ruleset is echoed in the Beliq-Ruleset-Resolved response header; see GET /v1/rulesets for selectable channels. */
+                /** @description Pin the validation ruleset for this request. A channel ("latest" or "previous"), or a comma-separated list of exact per-format pins as "<artifactKey>:<version>" (e.g. "xrechnung_schematron:2.4.0"). The two forms are mutually exclusive. Default (no header) uses "latest". Effective on this route only: parse/generate/convert accept but ignore it. The applied ruleset is echoed in the Beliq-Ruleset-Resolved response header; see GET /v1/rulesets for selectable channels. */
                 "Beliq-Ruleset"?: string;
             };
             path?: never;
@@ -1177,6 +1223,20 @@ export interface operations {
                                         name: string;
                                         value: string;
                                     }[];
+                                    allowances?: {
+                                        amount: number;
+                                        baseAmount?: number;
+                                        percentage?: number;
+                                        reason?: string;
+                                        reasonCode?: string;
+                                    }[];
+                                    charges?: {
+                                        amount: number;
+                                        baseAmount?: number;
+                                        percentage?: number;
+                                        reason?: string;
+                                        reasonCode?: string;
+                                    }[];
                                     subLines?: components["schemas"]["InvoiceLine"][];
                                 }[];
                                 taxSummary?: {
@@ -1215,6 +1275,24 @@ export interface operations {
                                     debitedAccountId?: string;
                                 };
                                 paymentTerms?: string;
+                                allowances?: {
+                                    amount: number;
+                                    baseAmount?: number;
+                                    percentage?: number;
+                                    reason?: string;
+                                    reasonCode?: string;
+                                    vatCategoryCode: string;
+                                    vatRate?: number;
+                                }[];
+                                charges?: {
+                                    amount: number;
+                                    baseAmount?: number;
+                                    percentage?: number;
+                                    reason?: string;
+                                    reasonCode?: string;
+                                    vatCategoryCode: string;
+                                    vatRate?: number;
+                                }[];
                                 totalNetAmount: number;
                                 totalTaxAmount: number;
                                 totalGrossAmount: number;
