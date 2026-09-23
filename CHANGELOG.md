@@ -4,6 +4,20 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.4.2 - 2026-09-23
+
+- Invoices carry allowances and charges at document level (BG-20, BG-21) and
+  line level (BG-27, BG-28), on `/v1/generate` and `/v1/parse`, as
+  `allowances` and `charges`. A document-level entry states its own VAT
+  category and rate; a line-level entry inherits the line's.
+- `GET /v1/rulesets` reports `previousChannel` on every ruleset: what
+  `Beliq-Ruleset: previous` reaches for that format today, with
+  `servingVersion`, `previousVersion` and a `fallbackReason` of `sunset`,
+  `notice-period` or `superseded`.
+- The publish job runs in the `release` GitHub environment, whose only
+  deployment policy is the `v*.*.*` tag pattern, so an edit to the workflow
+  cannot publish from another ref.
+
 ## 0.4.1 - 2026-09-21
 
 - Invoice lines carry the item's price detail and identity: `grossPrice`
