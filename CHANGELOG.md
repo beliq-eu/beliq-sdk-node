@@ -4,6 +4,21 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.4.3 - 2026-09-26
+
+- Invoices can name a payee (BG-10) and a tax representative (BG-11), as
+  `payee` and `taxRepresentative`, and state `paidAmount` (BT-113) and
+  `roundingAmount` (BT-114), from which the API derives the amount due
+  (BT-115). A payee with the seller's name or registration identifier is a
+  400. With a payee, UBL output writes `paymentMeans.creditorId` (BT-90) on
+  the payee rather than the seller.
+- `typeCode` (BT-3) sets the document type code within `documentType`, such as
+  `384` for a corrected invoice. A code from the other document type's half of
+  BR-CL-01 is a 400, and the fatturapa, facturae and eslog targets answer 422
+  `DOCUMENT_TYPE_STANDARD_MISMATCH`.
+- `precedingInvoiceReference` (BG-3) is written on invoices as well as credit
+  notes. `/v1/parse` shares the invoice shape and fills none of the new fields.
+
 ## 0.4.2 - 2026-09-23
 
 - Invoices carry allowances and charges at document level (BG-20, BG-21) and
