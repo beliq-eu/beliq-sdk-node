@@ -319,6 +319,7 @@ export interface operations {
                         taxCurrencyCode?: string;
                         taxTotalInAccountingCurrency?: number;
                         documentType?: "invoice" | "creditnote";
+                        typeCode?: string;
                         precedingInvoiceReference?: {
                             id: string;
                             issueDate?: string;
@@ -374,6 +375,26 @@ export interface operations {
                             peppol?: {
                                 schemeId: string;
                                 id: string;
+                            };
+                        };
+                        payee?: {
+                            name: string;
+                            identifier?: {
+                                id: string;
+                                schemeId?: string;
+                            };
+                            registrationId?: string;
+                        };
+                        taxRepresentative?: {
+                            name: string;
+                            vatId: string;
+                            address: {
+                                street?: string;
+                                additionalStreet?: string;
+                                city?: string;
+                                postalCode?: string;
+                                countryCode: string;
+                                countrySubentity?: string;
                             };
                         };
                         lines: {
@@ -476,6 +497,8 @@ export interface operations {
                         totalNetAmount: number;
                         totalTaxAmount: number;
                         totalGrossAmount: number;
+                        paidAmount?: number;
+                        roundingAmount?: number;
                         franceCtc?: boolean;
                         businessProcessId?: "S8" | "B8" | "M8";
                         italy?: {
@@ -1139,6 +1162,7 @@ export interface operations {
                                 taxCurrencyCode?: string;
                                 taxTotalInAccountingCurrency?: number;
                                 documentType?: "invoice" | "creditnote";
+                                typeCode?: string;
                                 precedingInvoiceReference?: {
                                     id: string;
                                     issueDate?: string;
@@ -1194,6 +1218,26 @@ export interface operations {
                                     peppol?: {
                                         schemeId: string;
                                         id: string;
+                                    };
+                                };
+                                payee?: {
+                                    name: string;
+                                    identifier?: {
+                                        id: string;
+                                        schemeId?: string;
+                                    };
+                                    registrationId?: string;
+                                };
+                                taxRepresentative?: {
+                                    name: string;
+                                    vatId: string;
+                                    address: {
+                                        street?: string;
+                                        additionalStreet?: string;
+                                        city?: string;
+                                        postalCode?: string;
+                                        countryCode: string;
+                                        countrySubentity?: string;
                                     };
                                 };
                                 lines: {
@@ -1296,6 +1340,8 @@ export interface operations {
                                 totalNetAmount: number;
                                 totalTaxAmount: number;
                                 totalGrossAmount: number;
+                                paidAmount?: number;
+                                roundingAmount?: number;
                                 franceCtc?: boolean;
                                 businessProcessId?: "S8" | "B8" | "M8";
                                 italy?: {
