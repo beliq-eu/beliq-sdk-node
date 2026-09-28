@@ -90,6 +90,18 @@ describe('Beliq client', () => {
     expect(calls[0].url).toBe('https://staging.beliq.eu/v1/me');
   });
 
+  it('strips every trailing slash, and a long run of slashes costs linear time', async () => {
+    const { fetchImpl, calls } = mock(() => ({ body: fixture('me.json') }));
+    await new Beliq({ apiKey, baseUrl: 'https://staging.beliq.eu///', fetch: fetchImpl }).me();
+    expect(calls[0].url).toBe('https://staging.beliq.eu/v1/me');
+
+    // The regex this replaced took about 3 s on this input; the loop takes about 1 ms.
+    const slow = `https://staging.beliq.eu${'/'.repeat(100_000)}x`;
+    const started = performance.now();
+    new Beliq({ apiKey, baseUrl: slow, fetch: fetchImpl });
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+
   it('validate() posts raw XML with the right query and parses the result', async () => {
     const { fetchImpl, calls } = mock(() => ({ body: fixture('validate-invalid.json') }));
     const xml = '<rsm:CrossIndustryInvoice/>';

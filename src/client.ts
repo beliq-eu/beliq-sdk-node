@@ -145,6 +145,14 @@ export interface ConvertResult {
   meta: ConvertMeta;
 }
 
+// A loop, not /\/+$/: that regex is quadratic on a long run of slashes followed by
+// another character (https://github.com/beliq-eu/beliq-sdk-node/security/code-scanning/1).
+function trimTrailingSlashes(url: string): string {
+  let end = url.length;
+  while (end > 0 && url[end - 1] === '/') end--;
+  return url.slice(0, end);
+}
+
 /** Read the authoritative per-response mode from the x-beliq-livemode header. */
 function livemodeHeader(headers: Headers): boolean | undefined {
   const raw = headers.get('x-beliq-livemode');
@@ -220,7 +228,7 @@ export class Beliq {
     this.livemode = !options.apiKey.startsWith(TEST_KEY_PREFIX);
     this.#config = {
       apiKey: options.apiKey,
-      baseUrl: (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, ''),
+      baseUrl: trimTrailingSlashes(options.baseUrl ?? DEFAULT_BASE_URL),
       auth: options.auth ?? 'header',
       fetchImpl,
       timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
