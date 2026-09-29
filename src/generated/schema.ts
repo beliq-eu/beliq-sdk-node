@@ -307,7 +307,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    standard: "xrechnung" | "zugferd" | "facturx" | "peppol-bis" | "fatturapa" | "facturae" | "eslog";
+                    standard: "xrechnung" | "zugferd" | "facturx" | "peppol-bis" | "fatturapa" | "facturae" | "eslog" | "ksef";
                     profile?: "minimum" | "basicwl" | "basic" | "en16931" | "extended" | "extended-ctc-fr" | "xrechnung" | "peppol" | "romania-ro-cius" | "netherlands-nlcius" | "ordinaria" | "eracun" | "fa3";
                     facturxProfile?: "minimum" | "basicwl" | "basic" | "en16931" | "extended" | "extended-ctc-fr";
                     output: "xml" | "pdf";
@@ -535,6 +535,19 @@ export interface operations {
                             };
                         };
                         slovenia?: Record<string, never>;
+                        poland?: {
+                            adnotacje?: {
+                                P_16?: "1" | "2";
+                                P_17?: "1" | "2";
+                                P_18?: "1" | "2";
+                                P_18A?: "1" | "2";
+                                P_23?: "1" | "2";
+                            };
+                            dataWytworzenia?: string;
+                            placeOfIssue?: string;
+                            jst?: "1" | "2";
+                            gv?: "1" | "2";
+                        };
                     };
                     verify?: boolean;
                     /** @enum {string} */
@@ -614,6 +627,8 @@ export interface operations {
                                 spainFacturaeRuntimeVersion?: string;
                                 sloveniaEslogXsdBundle?: string;
                                 sloveniaEslogRuntimeVersion?: string;
+                                polandKsefFa3XsdBundle?: string;
+                                polandKsefFa3RuntimeVersion?: string;
                                 romaniaRoCiusVersion?: string;
                                 netherlandsNlciusVersion?: string;
                                 rulesetChannel?: "latest" | "previous";
@@ -828,7 +843,7 @@ export interface operations {
     validateInvoice: {
         parameters: {
             query?: {
-                format?: "auto" | "cii" | "ubl" | "fatturapa" | "sdi_messaggio" | "facturae" | "eslog";
+                format?: "auto" | "cii" | "ubl" | "fatturapa" | "sdi_messaggio" | "facturae" | "eslog" | "poland_ksef_fa3";
                 franceCtc?: boolean;
             };
             header?: {
@@ -906,6 +921,8 @@ export interface operations {
                             spainFacturaeRuntimeVersion?: string;
                             sloveniaEslogXsdBundle?: string;
                             sloveniaEslogRuntimeVersion?: string;
+                            polandKsefFa3XsdBundle?: string;
+                            polandKsefFa3RuntimeVersion?: string;
                             romaniaRoCiusVersion?: string;
                             netherlandsNlciusVersion?: string;
                             rulesetChannel?: "latest" | "previous";
@@ -1114,7 +1131,7 @@ export interface operations {
     parseInvoice: {
         parameters: {
             query?: {
-                format?: "auto" | "cii" | "ubl" | "fatturapa" | "sdi_messaggio" | "facturae" | "eslog";
+                format?: "auto" | "cii" | "ubl" | "fatturapa" | "sdi_messaggio" | "facturae" | "eslog" | "poland_ksef_fa3";
             };
             header?: never;
             path?: never;
@@ -1378,6 +1395,19 @@ export interface operations {
                                     };
                                 };
                                 slovenia?: Record<string, never>;
+                                poland?: {
+                                    adnotacje?: {
+                                        P_16?: "1" | "2";
+                                        P_17?: "1" | "2";
+                                        P_18?: "1" | "2";
+                                        P_18A?: "1" | "2";
+                                        P_23?: "1" | "2";
+                                    };
+                                    dataWytworzenia?: string;
+                                    placeOfIssue?: string;
+                                    jst?: "1" | "2";
+                                    gv?: "1" | "2";
+                                };
                             };
                         };
                         error?: {
