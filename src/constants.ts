@@ -1,7 +1,7 @@
 // Curated option lists for end-user UX surfaces (connector dropdowns, docs).
 // These are the LIVE, authority-pinned public subset, intentionally narrower
 // than the generated type unions: provisional formats the API can technically
-// accept (fatturapa, sdi_messaggio, facturae, eslog) are withheld from public
+// accept (fatturapa, sdi_messaggio, facturae, eslog, ksef / poland_ksef_fa3) are withheld from public
 // option lists per LPD-1. The generated types in ./generated stay faithful to
 // the full API surface; these constants are what we surface to users.
 
