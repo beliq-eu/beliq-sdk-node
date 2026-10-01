@@ -163,6 +163,10 @@ export interface components {
                 reason?: string;
                 reasonCode?: string;
             }[];
+            invoicingPeriod?: {
+                startDate?: string;
+                endDate?: string;
+            };
             subLines?: components["schemas"]["InvoiceLine"][];
         };
     };
@@ -315,6 +319,12 @@ export interface operations {
                         number: string;
                         issueDate: string;
                         dueDate?: string;
+                        vatPointDate?: string;
+                        vatPointDateCode?: "3" | "35" | "432";
+                        invoicingPeriod?: {
+                            startDate?: string;
+                            endDate?: string;
+                        };
                         currencyCode: string;
                         taxCurrencyCode?: string;
                         taxTotalInAccountingCurrency?: number;
@@ -326,6 +336,17 @@ export interface operations {
                         };
                         buyerReference?: string;
                         orderReference?: string;
+                        salesOrderReference?: string;
+                        contractReference?: string;
+                        projectReference?: string;
+                        receivingAdviceReference?: string;
+                        despatchAdviceReference?: string;
+                        tenderReference?: string;
+                        invoicedObjectIdentifier?: {
+                            id: string;
+                            schemeId?: string;
+                        };
+                        buyerAccountingReference?: string;
                         note?: string;
                         seller: {
                             name: string;
@@ -438,6 +459,10 @@ export interface operations {
                                 reason?: string;
                                 reasonCode?: string;
                             }[];
+                            invoicingPeriod?: {
+                                startDate?: string;
+                                endDate?: string;
+                            };
                             subLines?: components["schemas"]["InvoiceLine"][];
                         }[];
                         taxSummary?: {
@@ -1175,6 +1200,12 @@ export interface operations {
                                 number: string;
                                 issueDate: string;
                                 dueDate?: string;
+                                vatPointDate?: string;
+                                vatPointDateCode?: "3" | "35" | "432";
+                                invoicingPeriod?: {
+                                    startDate?: string;
+                                    endDate?: string;
+                                };
                                 currencyCode: string;
                                 taxCurrencyCode?: string;
                                 taxTotalInAccountingCurrency?: number;
@@ -1186,6 +1217,17 @@ export interface operations {
                                 };
                                 buyerReference?: string;
                                 orderReference?: string;
+                                salesOrderReference?: string;
+                                contractReference?: string;
+                                projectReference?: string;
+                                receivingAdviceReference?: string;
+                                despatchAdviceReference?: string;
+                                tenderReference?: string;
+                                invoicedObjectIdentifier?: {
+                                    id: string;
+                                    schemeId?: string;
+                                };
+                                buyerAccountingReference?: string;
                                 note?: string;
                                 seller: {
                                     name: string;
@@ -1298,6 +1340,10 @@ export interface operations {
                                         reason?: string;
                                         reasonCode?: string;
                                     }[];
+                                    invoicingPeriod?: {
+                                        startDate?: string;
+                                        endDate?: string;
+                                    };
                                     subLines?: components["schemas"]["InvoiceLine"][];
                                 }[];
                                 taxSummary?: {
