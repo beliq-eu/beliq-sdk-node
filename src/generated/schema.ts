@@ -1156,6 +1156,7 @@ export interface operations {
     parseInvoice: {
         parameters: {
             query?: {
+                /** @description Checked against the allowed values, otherwise ignored. Detection is always automatic: the syntax is read from the document itself. */
                 format?: "auto" | "cii" | "ubl" | "fatturapa" | "sdi_messaggio" | "facturae" | "eslog" | "poland_ksef_fa3";
             };
             header?: never;
