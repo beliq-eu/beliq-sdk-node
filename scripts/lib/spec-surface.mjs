@@ -18,7 +18,7 @@
  * mechanism.
  *
  * A changed type or a reworded description is a divergence rather than missing
- * surface, and divergence from beliq-api's own copy is what
+ * surface, and divergence from the API's own copy is what
  * `test/spec-vendoring.test.ts` asserts.
  */
 
@@ -27,7 +27,7 @@ const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
 /**
  * Every enum value a schema can produce, including through union arms.
  *
- * beliq-api models a closed string set as an `anyOf` of single-value enums, so
+ * The API models a closed string set as an `anyOf` of single-value enums, so
  * a newly accepted format or standard reaches a client as a new arm rather than
  * a new member of one `enum`. Flattening both sides to a value set catches that
  * addition, while a narrowing (dropping a `null` arm) is a subset and stays

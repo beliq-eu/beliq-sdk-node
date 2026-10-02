@@ -1,7 +1,6 @@
 // Regenerates src/generated/schema.ts from the vendored openapi.json.
 // With `--check` it regenerates into a temp file and diffs against the committed
-// output, failing if they differ (the CI drift guard; mirrors beliq-api's
-// `openapi:check`). Run `npm run gen:types` and commit when it complains.
+// output, failing if they differ (the CI drift guard). Run `npm run gen:types` and commit when it complains.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

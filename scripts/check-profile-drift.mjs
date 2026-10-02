@@ -6,25 +6,21 @@
 // `profile` enum is flat), and a wrong pair surfaces as a 422 in a user's flow
 // rather than as a red build. This reads the engine's own table.
 //
-// It needs a beliq-engine checkout beside this repo and EXITS NON-ZERO without
-// one, rather than passing quietly: a check that reports success when it did not
-// run is worse than no check. That also means it does not belong in CI, where no
-// sibling exists. Run it whenever the map or the engine's table changes.
+// It needs a checkout of the engine's source, named by BELIQ_ENGINE_PATH, and
+// EXITS NON-ZERO without one, rather than passing quietly: a check that reports
+// success when it did not run is worse than no check. The engine's source is
+// not public, so this does not belong in CI. Run it whenever the map or the engine's table changes.
 import { readFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { LIVE_PROFILES_BY_STANDARD } from '../src/constants.ts';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const enginePath = resolve(
-  process.env.BELIQ_ENGINE_PATH ?? join(root, '../../beliq-engine'),
-  'app/routes/generate.py',
-);
+const engineRoot = process.env.BELIQ_ENGINE_PATH;
+const enginePath = engineRoot ? resolve(engineRoot, 'app/routes/generate.py') : null;
 
-if (!existsSync(enginePath)) {
+if (!enginePath || !existsSync(enginePath)) {
   console.error(
-    `no beliq-engine checkout at ${enginePath}.\n` +
-      'Set BELIQ_ENGINE_PATH to one. This check cannot run without the engine, ' +
+    (enginePath ? `no engine checkout at ${enginePath}.\n` : 'BELIQ_ENGINE_PATH is not set.\n') +
+      'Set BELIQ_ENGINE_PATH to a checkout of the engine source. This check cannot run without the engine, ' +
       'and does not pass without running.',
   );
   process.exit(1);

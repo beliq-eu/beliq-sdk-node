@@ -78,7 +78,7 @@ that reason, and a minor is reserved for a change that needs consumers to opt in
 - A per-attempt deadline, and transient failures are retried.
 - The transport defaults are exported from the package entry point, so a caller
   can read the timeout and retry values the SDK ships with.
-- The vendored `openapi.json` is asserted byte-identical to what beliq-api
+- The vendored `openapi.json` is asserted byte-identical to what the API
   generates, and the drift check is directional in the code rather than only in
   its comment. Ten Peppol emit error codes, the 413 responses, the verdict
   verification tier and the `/v1/me` response shape are typed; two error codes
