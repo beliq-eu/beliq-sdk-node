@@ -103,3 +103,6 @@ jobs:
         env:
           BELIQ_API_KEY: ${{ secrets.BELIQ_API_KEY }}
         run: npm run test:integration
+
+  public-scrub:
+    uses: beliq-eu/.github/.github/workflows/public-scrub.yml@main
