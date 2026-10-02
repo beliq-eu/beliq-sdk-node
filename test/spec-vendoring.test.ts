@@ -7,7 +7,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const vendored = join(root, 'openapi.json');
 
 /**
- * The vendored spec has to be byte-identical to the copy beliq-api generates and
+ * The vendored spec has to be byte-identical to the copy the API generates and
  * to the one the Python SDK vendors: three copies of one contract, and a client
  * generated from a stale or differently-serialized one types the API wrongly.
  *
@@ -47,8 +47,8 @@ describe('vendored openapi.json', () => {
    *
    * Set equality against the spec's own `required` list, so a fixture that omits
    * a field fails as loudly as one that invents it. Top-level keys of `data`:
-   * the nested objects are not walked, which is the same line the beliq-docs
-   * gate draws.
+   * the nested objects are not walked, which is the same line the API
+   * documentation's gate draws.
    */
   it('the me() fixture carries exactly the fields /v1/me returns', () => {
     const spec = JSON.parse(readFileSync(vendored, 'utf8'));

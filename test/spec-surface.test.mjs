@@ -120,7 +120,7 @@ describe('surfaceMissingFrom', () => {
   });
 
   describe('stays silent when the vendored copy is merely ahead or different', () => {
-    // The case that turned main red: bq-api#262 narrowed plan.name and reworded
+    // The case that turned main red: an API change narrowed plan.name and reworded
     // a description, and both read as "behind" until this rewrite.
     it('a type the vendored copy narrowed', () => {
       const missing = surfaceMissingFrom(

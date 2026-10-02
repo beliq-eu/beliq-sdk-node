@@ -171,7 +171,7 @@ try {
 `src/generated/schema.ts` is generated from a vendored copy of the published OpenAPI spec (`openapi.json`).
 
 ```bash
-npm run sync:spec      # refresh openapi.json from beliq-api / the live spec
+npm run sync:spec      # refresh openapi.json from the live spec (or BELIQ_OPENAPI_PATH)
 npm run gen:types      # regenerate src/generated/schema.ts
 npm run openapi:check  # CI drift guard: fails if the generated types are stale
 ```
