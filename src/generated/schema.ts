@@ -347,6 +347,16 @@ export interface operations {
                             schemeId?: string;
                         };
                         buyerAccountingReference?: string;
+                        supportingDocuments?: {
+                            id: string;
+                            description?: string;
+                            externalLocation?: string;
+                            attachment?: {
+                                content: string;
+                                mimeCode: string;
+                                filename: string;
+                            };
+                        }[];
                         note?: string;
                         seller: {
                             name: string;
@@ -1229,6 +1239,16 @@ export interface operations {
                                     schemeId?: string;
                                 };
                                 buyerAccountingReference?: string;
+                                supportingDocuments?: {
+                                    id: string;
+                                    description?: string;
+                                    externalLocation?: string;
+                                    attachment?: {
+                                        content: string;
+                                        mimeCode: string;
+                                        filename: string;
+                                    };
+                                }[];
                                 note?: string;
                                 seller: {
                                     name: string;
