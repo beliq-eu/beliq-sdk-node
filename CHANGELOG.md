@@ -4,7 +4,34 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.4.4 - 2026-10-02
+
+- Invoices carry additional supporting documents (BG-24) as
+  `supportingDocuments`, at most 50 of them: `id` (BT-122), which BR-52
+  requires, `description` (BT-123), `externalLocation` (BT-124) and
+  `attachment` (BT-125) with the file as base64 `content`, its `mimeCode` and
+  its `filename`. An entry can carry a URL, a file, both or neither. Output is
+  a CII `ram:AdditionalReferencedDocument` with type code 916, from the
+  Factur-X EN16931 profile up, and a UBL `cac:AdditionalDocumentReference`
+  with no document type code (UBL-SR-43 admits none here). Factur-X MINIMUM,
+  BASIC_WL and BASIC have no slot for it and drop it after the same checks, as
+  do the fatturapa, facturae, eslog and ksef targets. Content that is not
+  base64, or that decodes to no bytes, is a 400. On XRechnung BR-DE-22 refuses
+  two attachments sharing a `filename`, and DE-R-022 does the same on Peppol
+  BIS between two German parties; both compare names as written, so names
+  differing only in case pass. An attachment counts toward the 1 MiB body
+  limit of `POST /v1/generate`, and base64 takes four bytes for every three of
+  the file.
+- The `format` query parameter of `/v1/parse` now describes itself: it is
+  checked against the allowed values and otherwise ignored, because the syntax
+  is always read from the document itself. `/v1/parse` shares the invoice
+  shape and fills neither `supportingDocuments` nor the fields 0.4.3 added.
+
 ## 0.4.3 - 2026-09-26
+
+Never published to npm: the release job refused the tag, because `package.json`
+read 0.4.2 at the commit it pointed at. 0.4.4 is the first release that carries
+the changes below.
 
 - Invoices can name a payee (BG-10) and a tax representative (BG-11), as
   `payee` and `taxRepresentative`, and state `paidAmount` (BT-113) and
