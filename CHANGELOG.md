@@ -4,6 +4,25 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.4.5 - 2026-10-03
+
+- `LIVE_GENERATE_STANDARDS` carries all eight standards `POST /v1/generate`
+  accepts, where it had carried four. The four added are the national XSD
+  formats: `fatturapa`, `facturae`, `eslog` and `ksef`. Each is Schema-checked,
+  meaning structure only and no business rules, because its authority publishes
+  no machine-readable rule pack, and `GET /v1/rulesets` carries the badge.
+  `LIVE_PROFILES_BY_STANDARD` gains the one profile each allows: `ordinaria`
+  for `fatturapa` and `facturae`, `eracun` for `eslog`, `fa3` for `ksef`. The
+  map stays narrower than the engine in one place, the Factur-X `minimum` and
+  `basic` profiles, for FNFE-MPE source gating. `LIVE_GENERATE_PRESETS` is
+  unchanged at five entries: it mirrors what beliq.eu's own generator offers.
+- The vendored `openapi.json` carries the corrected `/v1/validate` description.
+  It had said that matching a verdict's `rulesetArtifacts` rows against the
+  `GET /v1/rulesets` catalog covers publicly-supported formats only, and that a
+  national format's components are kept off the catalog. Both were false: the
+  catalog publishes every format beliq carries and the component rows each
+  ruleset is built from.
+
 ## 0.4.4 - 2026-10-02
 
 - Invoices carry additional supporting documents (BG-24) as
