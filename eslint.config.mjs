@@ -12,4 +12,13 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-imports': 'error',
     },
   },
+  // scripts/ is plain .mjs run by node, so no-undef is live there (it is off for
+  // TypeScript, where tsc owns the question). Declaring the three globals the
+  // scripts use beats pulling in the `globals` package for them.
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', fetch: 'readonly', process: 'readonly' },
+    },
+  },
 );
