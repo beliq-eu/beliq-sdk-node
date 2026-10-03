@@ -71,7 +71,14 @@ function run(engine) {
   }
 }
 
-describe('check-profile-drift.mjs', () => {
+// `npm run check:profiles` runs the script with --experimental-strip-types,
+// because it imports src/constants.ts. Node 20 rejects that flag, so on the
+// matrix's 20 leg the script cannot run at all and neither can these cases.
+// They are not optional: the 22 leg runs every one of them, and ci-ok requires
+// both legs.
+const STRIPS_TYPES = Number(process.versions.node.split('.')[0]) >= 22;
+
+describe.skipIf(!STRIPS_TYPES)('check-profile-drift.mjs', () => {
   const standards = Object.keys(LIVE_PROFILES_BY_STANDARD).length;
 
   it('passes when every row resolves and covers the map', () => {
