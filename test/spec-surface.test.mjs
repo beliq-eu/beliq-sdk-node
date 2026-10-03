@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { surfaceMissingFrom } from '../scripts/lib/spec-surface.mjs';
+import { descriptionsDiverging, surfaceMissingFrom } from '../scripts/lib/spec-surface.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const spec = () => JSON.parse(readFileSync(join(root, 'openapi.json'), 'utf8'));
@@ -197,5 +197,80 @@ describe('surfaceMissingFrom', () => {
     expect(missing).toEqual([
       'components.schemas.InvoiceLine.subLines[].$ref -> #/components/schemas/Other',
     ]);
+  });
+});
+
+/**
+ * `surfaceMissingFrom` is silent on description text by design, and nothing else
+ * compared it: the vendoring test re-serializes the vendored copy and compares
+ * it with itself. These cases are that half of the contract.
+ */
+describe('descriptionsDiverging', () => {
+  const vendored = spec();
+  const live = (mutate) => {
+    const clone = spec();
+    mutate(clone);
+    return clone;
+  };
+  const meData = (s) =>
+    s.paths['/v1/me'].get.responses['200'].content['application/json'].schema.properties.data;
+  const meDataPath =
+    'paths./v1/me.get.responses.200.content.application/json.schema.properties.data';
+
+  it('is silent when the two are identical', () => {
+    expect(descriptionsDiverging(spec(), vendored)).toEqual([]);
+  });
+
+  it('reports a reworded description the surface check ignores', () => {
+    const mutated = live((s) => {
+      meData(s).properties.quota.properties.resetsAt.description = 'something else';
+    });
+    expect(surfaceMissingFrom(mutated, vendored)).toEqual([]);
+    expect(descriptionsDiverging(mutated, vendored)).toEqual([
+      `${meDataPath}.properties.quota.properties.resetsAt: the text differs`,
+    ]);
+  });
+
+  it('reports a description only the live spec carries', () => {
+    const mutated = live((s) => {
+      meData(s).properties.plan.description = 'the plan this key draws on';
+    });
+    expect(descriptionsDiverging(mutated, vendored)).toEqual([
+      `${meDataPath}.properties.plan: only the live spec carries it`,
+    ]);
+  });
+
+  it('reports a description only the vendored copy carries', () => {
+    // Which is also what a vendored copy synced ahead of the deploy looks like.
+    // Prose carries no direction, so this is reported and the message says both
+    // readings; the surface check stays directional.
+    const mutated = live((s) => {
+      delete meData(s).properties.livemode.description;
+    });
+    expect(surfaceMissingFrom(mutated, vendored)).toEqual([]);
+    expect(descriptionsDiverging(mutated, vendored)).toEqual([
+      `${meDataPath}.properties.livemode: only the vendored copy carries it`,
+    ]);
+  });
+
+  it("reports the document's own description and a tag description", () => {
+    // `info` is excluded from the surface walk wholesale, and this SDK publishes
+    // the document, so its own blurb is a claim nothing else compares.
+    const mutated = live((s) => {
+      s.info.description = 'a different blurb';
+      s.tags[0].description = 'a different tag line';
+    });
+    expect(descriptionsDiverging(mutated, vendored)).toEqual([
+      'info: the text differs',
+      'tags[0]: the text differs',
+    ]);
+  });
+
+  it('is silent on a reworded summary', () => {
+    // Only `description` is compared. A summary labels an operation, it does not
+    // instruct a caller, and comparing every string is the value-by-value walk
+    // surfaceMissingFrom exists to replace.
+    const mutated = live((s) => { s.paths['/v1/me'].get.summary = 'a different summary'; });
+    expect(descriptionsDiverging(mutated, vendored)).toEqual([]);
   });
 });
