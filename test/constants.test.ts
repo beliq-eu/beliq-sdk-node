@@ -113,8 +113,18 @@ describe('LIVE_PROFILES_BY_STANDARD', () => {
     }
   });
 
-  it('defers to the API for a standard it does not carry', () => {
-    expect(profilesForStandard('fatturapa')).toEqual([]);
+  it('carries the national XSD standards and their single profile', () => {
+    expect(profilesForStandard('fatturapa')).toEqual(['ordinaria']);
+    expect(profilesForStandard('facturae')).toEqual(['ordinaria']);
+    expect(profilesForStandard('eslog')).toEqual(['eracun']);
+    expect(profilesForStandard('ksef')).toEqual(['fa3']);
     expect(isProfileAllowedForStandard('fatturapa', 'ordinaria')).toBe(true);
+    // Each carries exactly one profile, so the other standards' profiles are not legal here.
+    expect(isProfileAllowedForStandard('fatturapa', 'fa3')).toBe(false);
+  });
+
+  it('defers to the API for a standard it does not know', () => {
+    expect(profilesForStandard('sdi_messaggio')).toEqual([]);
+    expect(isProfileAllowedForStandard('sdi_messaggio', 'ordinaria')).toBe(true);
   });
 });

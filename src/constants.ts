@@ -1,8 +1,8 @@
 // Curated option lists for end-user UX surfaces (connector dropdowns, docs).
-// These are the LIVE, authority-pinned public subset, intentionally narrower
-// than the generated type unions: provisional formats the API can technically
-// accept (fatturapa, sdi_messaggio, facturae, eslog, ksef / poland_ksef_fa3) are withheld from public
-// option lists. The generated types in ./generated stay faithful to
+// Each list carries every value the API accepts for its operation, which is
+// also every format GET /v1/rulesets publishes, each wearing the badge that
+// says how deep its check goes. A list narrower than the API's own enum states
+// its reason beside it. The generated types in ./generated stay faithful to
 // the full API surface; these constants are what we surface to users.
 
 export const DEFAULT_BASE_URL = 'https://api.beliq.eu';
@@ -17,7 +17,22 @@ export const DEFAULT_TIMEOUT_MS = 90_000;
 /** Extra attempts after the first, for 429 / 502 / 503 only. */
 export const DEFAULT_MAX_RETRIES = 3;
 
-export const LIVE_GENERATE_STANDARDS = ['xrechnung', 'zugferd', 'facturx', 'peppol-bis'] as const;
+/**
+ * Every `standard` POST /v1/generate accepts, in the order its enum lists them.
+ * The four national formats are Schema-checked: their authority publishes a
+ * schema and no machine-readable business rules, so beliq checks structure and
+ * says so. GET /v1/rulesets carries each one's badge.
+ */
+export const LIVE_GENERATE_STANDARDS = [
+  'xrechnung',
+  'zugferd',
+  'facturx',
+  'peppol-bis',
+  'fatturapa',
+  'facturae',
+  'eslog',
+  'ksef',
+] as const;
 
 /** A named generate target: the API `standard` plus the `profile`/`facturxProfile`/`output` it needs. */
 export interface GeneratePreset {
@@ -63,10 +78,9 @@ export const LIVE_PROFILES = ['basicwl', 'en16931', 'extended', 'extended-ctc-fr
  * `peppol-bis`, and `extended-ctc-fr` is the AFNOR XP Z12-012 France CTC overlay
  * with no ZUGFeRD-branded counterpart.
  *
- * Narrower than the engine's own table in two places, both deliberate: the
- * `minimum` and `basic` Factur-X profiles are engine-supported but withheld
- * (FNFE-MPE source gating),
- * and the standards outside LIVE_GENERATE_STANDARDS are absent entirely.
+ * It carries every standard the API accepts. It stays narrower than the
+ * engine's table in one place: the `minimum` and `basic` Factur-X profiles are
+ * engine-supported but not offered here (FNFE-MPE source gating).
  *
  * `scripts/check-profile-drift.mjs` compares this against the engine's table.
  */
@@ -75,6 +89,10 @@ export const LIVE_PROFILES_BY_STANDARD = {
   'peppol-bis': ['peppol', 'romania-ro-cius', 'netherlands-nlcius'],
   zugferd: ['basicwl', 'en16931', 'extended'],
   facturx: ['basicwl', 'en16931', 'extended', 'extended-ctc-fr'],
+  fatturapa: ['ordinaria'],
+  facturae: ['ordinaria'],
+  eslog: ['eracun'],
+  ksef: ['fa3'],
 } as const satisfies Record<(typeof LIVE_GENERATE_STANDARDS)[number], readonly string[]>;
 
 /** The profiles a caller may choose for `standard`; empty for an unknown standard. */
