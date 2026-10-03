@@ -17,9 +17,21 @@
  * excluded wholesale for the same reason, one field at a time instead of at the
  * mechanism.
  *
- * A changed type or a reworded description is a divergence rather than missing
- * surface, and divergence from the API's own copy is what
- * `test/spec-vendoring.test.ts` asserts.
+ * A changed type is a divergence rather than missing surface, and nothing here
+ * reports it.
+ *
+ * `descriptionsDiverging` answers the second question, "does the vendored copy
+ * still say what the deployed API says", for description text only. That one was
+ * left to `test/spec-vendoring.test.ts`, which does not ask it: that test
+ * re-serializes this repo's copy and compares it with itself, so it catches a
+ * serialization change and nothing about the API. Two of the five spec syncs
+ * this repo made between 2026-09-29 and 2026-10-03 changed nothing but
+ * description text, and a human found both of them:
+ * https://github.com/beliq-eu/beliq-sdk-node/pull/59 and
+ * https://github.com/beliq-eu/beliq-sdk-node/pull/69.
+ *
+ * Kept in step with `beliq-sdk-python/scripts/_spec_surface.py`; the two are
+ * expected to report the same paths for the same pair of documents.
  */
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -159,4 +171,51 @@ export function surfaceMissingFrom(live, vend) {
   }
 
   return missing;
+}
+
+/**
+ * Every `description` string in the document, by its path.
+ *
+ * The path is the raw document path, not the collapsed one `surfaceMissingFrom`
+ * reports: this walk makes no distinction between a schema, a response and the
+ * document's own `info`, because every one of them is text the SDK ships.
+ */
+function descriptions(node, path, into) {
+  if (Array.isArray(node)) {
+    node.forEach((value, index) => descriptions(value, `${path}[${index}]`, into));
+  } else if (isObject(node)) {
+    for (const [key, value] of Object.entries(node)) {
+      if (key === 'description' && typeof value === 'string') into.set(path, value);
+      else descriptions(value, path ? `${path}.${key}` : key, into);
+    }
+  }
+  return into;
+}
+
+/**
+ * Every `description` the two documents do not spell identically.
+ *
+ * Unlike `surfaceMissingFrom` this is NOT directional, because prose carries no
+ * direction: nothing in the pair says which side is newer. Both directions are
+ * reported and both mean the same thing, that the vendored copy and the deployed
+ * API disagree about what the API says. The remedy differs: re-sync, or deploy
+ * the spec change the vendored copy was synced from.
+ *
+ * A description is a contract, not decoration. It is where an operation declares
+ * which field to branch on, and the vendored copy is published to npm, so a
+ * description this SDK ships is a claim beliq makes. `summary` and `title` are
+ * deliberately not compared: they label, they do not instruct, and comparing
+ * every string is the value-by-value walk this module exists to replace.
+ */
+export function descriptionsDiverging(live, vend) {
+  const liveText = descriptions(live, '', new Map());
+  const vendText = descriptions(vend, '', new Map());
+
+  const diverging = [];
+  for (const path of [...new Set([...liveText.keys(), ...vendText.keys()])].sort()) {
+    if (!vendText.has(path)) diverging.push(`${path}: only the live spec carries it`);
+    else if (!liveText.has(path)) diverging.push(`${path}: only the vendored copy carries it`);
+    else if (liveText.get(path) !== vendText.get(path)) diverging.push(`${path}: the text differs`);
+  }
+  return diverging;
 }
