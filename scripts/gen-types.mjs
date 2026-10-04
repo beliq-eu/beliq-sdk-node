@@ -2,7 +2,7 @@
 // With `--check` it regenerates into a temp file and diffs against the committed
 // output, failing if they differ (the CI drift guard). Run `npm run gen:types` and commit when it complains.
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
