@@ -36,6 +36,9 @@ export type ValidationFormat = ValidationResult['format'];
 
 /** Structured invoice extracted from a document (POST /v1/parse). */
 export type ParseResult = Json200Data<'parseInvoice'>;
+/** One warning about what the document holds and the parsed invoice does not. */
+export type ParseWarning = ParseResult['warnings'][number];
+export type ParseWarningCode = ParseWarning['code'];
 
 /** The JSON-mode generate envelope (Accept: application/json): the seal. */
 export type GenerateResponse = Json200Data<'generateInvoice'>;
