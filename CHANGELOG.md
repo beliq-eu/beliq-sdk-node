@@ -4,6 +4,23 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.4.6 - 2026-10-06
+
+- The vendored `openapi.json` carries the four fields `POST /v1/parse` answers
+  with and the previous copy did not. `warnings` is always present, and empty
+  when the parser read every element that holds something: `PARSE_NOT_RETURNED`
+  lists what the document carries beyond the parsed `invoice`, by path and
+  count, and `PARSE_VALUE_NOT_FOUND` names a field no value could be read for.
+  `profileUrn` (BT-24) and `businessProcessId` (BT-23) carry what the document
+  states, and the latter is not the `businessProcessId` a `generate()` invoice
+  takes, which is an input limited to the three French Flux 2 codes.
+  `franceCtcDetected` is true when BT-23 is one of the French cadre de
+  facturation codes or BT-24 is the EXTENDED-CTC-FR URN, and absent otherwise.
+- `ParseResult` picks all four up from the regenerated schema, and
+  `ParseWarning` and `ParseWarningCode` are exported beside it, the way
+  `ValidationIssue` is exported beside `ValidationResult`, so a caller can
+  annotate a warning without indexing into the result type.
+
 ## 0.4.5 - 2026-10-03
 
 - `LIVE_GENERATE_STANDARDS` carries all eight standards `POST /v1/generate`
