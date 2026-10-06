@@ -1944,7 +1944,7 @@ export interface operations {
                                 rulesetVersion: string;
                                 rulesetArtefact: string;
                                 versionKey: string;
-                                verificationTier: "conformance-verified" | "builder-round-trip" | "reconstructed-rules" | "xsd-structural" | null;
+                                verificationTier: "conformance-verified" | "builder-round-trip" | "reconstructed-rules" | "xsd-structural" | (never | null);
                                 rulesProvenance: "authority-conformance" | "authority-artifact" | "community" | "beliq-authored" | "none";
                                 verificationBadge: "authority-verified" | "independently-rule-checked" | "structure-checked";
                                 releaseDate: string | null;
@@ -1971,7 +1971,7 @@ export interface operations {
                                     /** @description The version `Beliq-Ruleset: previous` resolves to for this artefact today, or null when the channel falls back to `latest` for it. Pin it exactly as `Beliq-Ruleset: <versionKey>:<previousVersion>` to reach it regardless. */
                                     previousVersion: string | null;
                                     /** @description Why `previous` reaches nothing for this artefact; null exactly when `previousVersion` is set. `sunset` = every retained version is past its `retainedUntil`, so not even an exact pin resolves. `notice-period` = the only retained version is the one standing in for `latest` until a scheduled bump takes effect, so there is nothing behind it yet. `superseded` = the authority made the successor mandatory, so Beliq will not choose the older ruleset on your behalf; an exact pin still reaches it until `retainedUntil`. */
-                                    fallbackReason: "sunset" | "notice-period" | "superseded" | null;
+                                    fallbackReason: "sunset" | "notice-period" | "superseded" | (never | null);
                                 }[];
                             }[];
                             channels: {
