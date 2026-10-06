@@ -142,6 +142,16 @@ describe('Beliq client', () => {
     expect(calls[0].url).toBe('https://api.beliq.eu/v1/parse?format=auto');
     expect(result.format).toBe('cii');
     expect(result.invoice.number).toBe('IT-2026-001');
+    expect(result.profileUrn).toBe('urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0');
+    expect(result.businessProcessId).toBe('urn:fdc:peppol.eu:2017:poacc:billing:01:1.0');
+    // Absent on a document that is not French, rather than false.
+    expect(result.franceCtcDetected).toBeUndefined();
+    // The parsed invoice is a subset of the document: these say what is left.
+    expect(result.warnings[0].code).toBe('PARSE_NOT_RETURNED');
+    expect(result.warnings[0].elements?.[0]).toEqual({
+      path: '/rsm:CrossIndustryInvoice/rsm:ExchangedDocument/ram:IncludedNote',
+      count: 2,
+    });
   });
 
   it('generate() posts JSON and returns decoded XML plus header metadata', async () => {

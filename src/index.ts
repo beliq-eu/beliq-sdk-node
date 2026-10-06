@@ -40,6 +40,8 @@ export type {
   Severity,
   ValidationFormat,
   ParseResult,
+  ParseWarning,
+  ParseWarningCode,
   GenerateBody,
   GenerateResponse,
   RulesetArtifact,

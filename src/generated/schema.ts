@@ -1207,6 +1207,9 @@ export interface operations {
                         data?: {
                             format: "cii" | "ubl";
                             profileDetected?: string;
+                            profileUrn?: string;
+                            businessProcessId?: string;
+                            franceCtcDetected?: boolean;
                             invoice: {
                                 number: string;
                                 issueDate: string;
@@ -1476,6 +1479,16 @@ export interface operations {
                                     gv?: "1" | "2";
                                 };
                             };
+                            warnings: {
+                                code: "PARSE_NOT_RETURNED" | "PARSE_VALUE_NOT_FOUND";
+                                message: string;
+                                field?: string;
+                                terms?: string[];
+                                elements?: {
+                                    path: string;
+                                    count: number;
+                                }[];
+                            }[];
                         };
                         error?: {
                             code: "VALIDATION_ERROR" | "INVALID_INVOICE" | "PROFILE_STANDARD_MISMATCH" | "DOCUMENT_TYPE_STANDARD_MISMATCH" | "PARSE_FAILED" | "AUTHENTICATION_REQUIRED" | "INVALID_API_KEY" | "INSUFFICIENT_ROLE" | "QUOTA_EXCEEDED" | "RATE_LIMITED" | "ACCOUNT_THROTTLED" | "ENGINE_UNAVAILABLE" | "INTERNAL_ERROR" | "NOT_FOUND" | "CONVERSION_UNSUPPORTED_PAIR" | "CONVERSION_LOSSY_FAILCLOSED" | "CONVERSION_TOOL_UNAVAILABLE" | "CONVERSION_TOOL_ERROR" | "PDF_TEMPLATE_AUTH_REQUIRED" | "PDF_TEMPLATE_NOT_FOUND" | "PDF_TEMPLATE_INVALID" | "TRANSMISSION_DISABLED" | "TRANSMISSION_NO_PROVIDER" | "IDEMPOTENCY_KEY_REUSED" | "INVALID_IDEMPOTENCY_KEY" | "SENDER_NOT_REGISTERED" | "CONTENT_ALREADY_SENT" | "INBOX_UNKNOWN_PROVIDER" | "INBOX_VERIFICATION_FAILED" | "INBOX_SIGNATURE_EXPIRED" | "ENROLLMENT_MODE_UNSUPPORTED" | "ENROLLMENT_REFUSED" | "RECIPIENT_NOT_ROUTABLE" | "SENDER_COUNTRY_MISSING" | "DOCUMENT_PARTY_MISMATCH" | "FRENCH_DOMESTIC_FLOW" | "FRANCE_CTC_BLOCKING_FINDINGS" | "FRANCE_CTC_NOT_JUDGED" | "FRANCE_INVOICE_NUMBER_BURNED" | "UNSUPPORTED_SYNTAX" | "MALFORMED_DOCUMENT" | "EMPTY_DOCUMENT" | "MISSING_CUSTOMIZATION_ID" | "MISSING_PROCESS_ID";
