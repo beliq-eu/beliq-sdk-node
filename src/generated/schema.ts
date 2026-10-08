@@ -1211,172 +1211,44 @@ export interface operations {
                             businessProcessId?: string;
                             franceCtcDetected?: boolean;
                             invoice: {
-                                number: string;
-                                issueDate: string;
-                                dueDate?: string;
-                                vatPointDate?: string;
-                                vatPointDateCode?: "3" | "35" | "432";
-                                invoicingPeriod?: {
-                                    startDate?: string;
-                                    endDate?: string;
-                                };
-                                currencyCode: string;
-                                taxCurrencyCode?: string;
-                                taxTotalInAccountingCurrency?: number;
+                                number?: string;
+                                issueDate?: string;
+                                currencyCode?: string;
                                 documentType?: "invoice" | "creditnote";
                                 typeCode?: string;
-                                precedingInvoiceReference?: {
-                                    id: string;
-                                    issueDate?: string;
-                                };
                                 buyerReference?: string;
-                                orderReference?: string;
-                                salesOrderReference?: string;
-                                contractReference?: string;
-                                projectReference?: string;
-                                receivingAdviceReference?: string;
-                                despatchAdviceReference?: string;
-                                tenderReference?: string;
-                                invoicedObjectIdentifier?: {
-                                    id: string;
-                                    schemeId?: string;
-                                };
-                                buyerAccountingReference?: string;
-                                supportingDocuments?: {
-                                    id: string;
-                                    description?: string;
-                                    externalLocation?: string;
-                                    attachment?: {
-                                        content: string;
-                                        mimeCode: string;
-                                        filename: string;
-                                    };
-                                }[];
-                                note?: string;
-                                seller: {
-                                    name: string;
+                                seller?: {
+                                    name?: string;
                                     vatId?: string;
                                     taxId?: string;
-                                    registrationId?: string;
-                                    /** Format: email */
-                                    email?: string;
-                                    phone?: string;
-                                    address: {
-                                        street?: string;
-                                        additionalStreet?: string;
-                                        city: string;
-                                        postalCode: string;
-                                        countryCode: string;
-                                        state?: string;
-                                        region?: string;
-                                        province?: string;
-                                        countrySubentity?: string;
-                                    };
-                                    contactName?: string;
-                                    peppol?: {
-                                        schemeId: string;
-                                        id: string;
-                                    };
-                                };
-                                buyer: {
-                                    name: string;
-                                    vatId?: string;
-                                    taxId?: string;
-                                    registrationId?: string;
-                                    /** Format: email */
-                                    email?: string;
-                                    phone?: string;
-                                    address: {
-                                        street?: string;
-                                        additionalStreet?: string;
-                                        city: string;
-                                        postalCode: string;
-                                        countryCode: string;
-                                        state?: string;
-                                        region?: string;
-                                        province?: string;
-                                        countrySubentity?: string;
-                                    };
-                                    contactName?: string;
-                                    peppol?: {
-                                        schemeId: string;
-                                        id: string;
-                                    };
-                                };
-                                payee?: {
-                                    name: string;
-                                    identifier?: {
-                                        id: string;
-                                        schemeId?: string;
-                                    };
-                                    registrationId?: string;
-                                };
-                                taxRepresentative?: {
-                                    name: string;
-                                    vatId: string;
-                                    address: {
+                                    address?: {
                                         street?: string;
                                         additionalStreet?: string;
                                         city?: string;
                                         postalCode?: string;
-                                        countryCode: string;
-                                        countrySubentity?: string;
+                                        countryCode?: string;
+                                    };
+                                };
+                                buyer?: {
+                                    name?: string;
+                                    vatId?: string;
+                                    taxId?: string;
+                                    address?: {
+                                        street?: string;
+                                        additionalStreet?: string;
+                                        city?: string;
+                                        postalCode?: string;
+                                        countryCode?: string;
                                     };
                                 };
                                 lines: {
-                                    description: string;
-                                    quantity: number;
-                                    unitCode: string;
-                                    unitPrice: number;
-                                    lineTotal: number;
-                                    vatRate: number;
-                                    vatCategoryCode: string;
-                                    itemId?: string;
-                                    buyerItemId?: string;
-                                    grossPrice?: number;
-                                    priceDiscount?: number;
-                                    priceBaseQuantity?: number;
-                                    standardItemId?: {
-                                        id: string;
-                                        schemeId: string;
-                                    };
-                                    classifications?: {
-                                        code: string;
-                                        listId: string;
-                                        listVersionId?: string;
-                                    }[];
-                                    originCountryCode?: string;
-                                    attributes?: {
-                                        name: string;
-                                        value: string;
-                                    }[];
-                                    allowances?: {
-                                        amount: number;
-                                        baseAmount?: number;
-                                        percentage?: number;
-                                        reason?: string;
-                                        reasonCode?: string;
-                                    }[];
-                                    charges?: {
-                                        amount: number;
-                                        baseAmount?: number;
-                                        percentage?: number;
-                                        reason?: string;
-                                        reasonCode?: string;
-                                    }[];
-                                    invoicingPeriod?: {
-                                        startDate?: string;
-                                        endDate?: string;
-                                    };
-                                    subLines?: components["schemas"]["InvoiceLine"][];
-                                }[];
-                                taxSummary?: {
-                                    vatCategoryCode: string;
-                                    vatRate: number;
-                                    taxableAmount: number;
-                                    taxAmount: number;
-                                    exemptionReasonText?: string;
-                                    exemptionReasonCode?: string;
+                                    description?: string;
+                                    quantity?: number;
+                                    unitCode?: string;
+                                    unitPrice?: number;
+                                    lineTotal?: number;
+                                    vatRate?: number;
+                                    vatCategoryCode?: string;
                                 }[];
                                 delivery?: {
                                     name?: string;
@@ -1390,94 +1262,13 @@ export interface operations {
                                         additionalStreet?: string;
                                         city?: string;
                                         postalCode?: string;
-                                        countryCode: string;
                                         countrySubentity?: string;
+                                        countryCode?: string;
                                     };
                                 };
-                                paymentMeans?: {
-                                    typeCode: string;
-                                    iban?: string;
-                                    bic?: string;
-                                    bankName?: string;
-                                    paymentReference?: string;
-                                    information?: string;
-                                    mandateReference?: string;
-                                    creditorId?: string;
-                                    debitedAccountId?: string;
-                                };
-                                paymentTerms?: string;
-                                allowances?: {
-                                    amount: number;
-                                    baseAmount?: number;
-                                    percentage?: number;
-                                    reason?: string;
-                                    reasonCode?: string;
-                                    vatCategoryCode: string;
-                                    vatRate?: number;
-                                }[];
-                                charges?: {
-                                    amount: number;
-                                    baseAmount?: number;
-                                    percentage?: number;
-                                    reason?: string;
-                                    reasonCode?: string;
-                                    vatCategoryCode: string;
-                                    vatRate?: number;
-                                }[];
-                                totalNetAmount: number;
-                                totalTaxAmount: number;
-                                totalGrossAmount: number;
-                                paidAmount?: number;
-                                roundingAmount?: number;
-                                franceCtc?: boolean;
-                                businessProcessId?: "S8" | "B8" | "M8";
-                                italy?: {
-                                    codiceDestinatario?: string;
-                                    regimeFiscale?: string;
-                                    progressivoInvio?: string;
-                                    idTrasmittente?: {
-                                        country: string;
-                                        id: string;
-                                    };
-                                    tipoDocumento?: string;
-                                    condizioniPagamento?: string;
-                                    modalitaPagamento?: string;
-                                    esigibilitaIVA?: string;
-                                    causale?: string[];
-                                };
-                                romania?: Record<string, never>;
-                                netherlands?: Record<string, never>;
-                                spain?: {
-                                    modality?: "I" | "L";
-                                    invoiceIssuerType?: "EM" | "RE" | "TE";
-                                    invoiceDocumentType?: string;
-                                    invoiceClass?: string;
-                                    taxTypeCode?: string;
-                                    languageName?: string;
-                                    batchIdentifier?: string;
-                                    seller?: {
-                                        personTypeCode?: "J" | "F";
-                                        residenceTypeCode?: "R" | "U" | "E";
-                                    };
-                                    buyer?: {
-                                        personTypeCode?: "J" | "F";
-                                        residenceTypeCode?: "R" | "U" | "E";
-                                    };
-                                };
-                                slovenia?: Record<string, never>;
-                                poland?: {
-                                    adnotacje?: {
-                                        P_16?: "1" | "2";
-                                        P_17?: "1" | "2";
-                                        P_18?: "1" | "2";
-                                        P_18A?: "1" | "2";
-                                        P_23?: "1" | "2";
-                                    };
-                                    dataWytworzenia?: string;
-                                    placeOfIssue?: string;
-                                    jst?: "1" | "2";
-                                    gv?: "1" | "2";
-                                };
+                                totalNetAmount?: number;
+                                totalTaxAmount?: number;
+                                totalGrossAmount?: number;
                             };
                             warnings: {
                                 code: "PARSE_NOT_RETURNED" | "PARSE_VALUE_NOT_FOUND";
@@ -1944,7 +1735,8 @@ export interface operations {
                                 rulesetVersion: string;
                                 rulesetArtefact: string;
                                 versionKey: string;
-                                verificationTier: "conformance-verified" | "builder-round-trip" | "reconstructed-rules" | "xsd-structural" | (never | null);
+                                /** @enum {string|null} */
+                                verificationTier: "conformance-verified" | "builder-round-trip" | "reconstructed-rules" | "xsd-structural" | null;
                                 rulesProvenance: "authority-conformance" | "authority-artifact" | "community" | "beliq-authored" | "none";
                                 verificationBadge: "authority-verified" | "independently-rule-checked" | "structure-checked";
                                 releaseDate: string | null;
@@ -1970,8 +1762,11 @@ export interface operations {
                                     servingVersion: string;
                                     /** @description The version `Beliq-Ruleset: previous` resolves to for this artefact today, or null when the channel falls back to `latest` for it. Pin it exactly as `Beliq-Ruleset: <versionKey>:<previousVersion>` to reach it regardless. */
                                     previousVersion: string | null;
-                                    /** @description Why `previous` reaches nothing for this artefact; null exactly when `previousVersion` is set. `sunset` = every retained version is past its `retainedUntil`, so not even an exact pin resolves. `notice-period` = the only retained version is the one standing in for `latest` until a scheduled bump takes effect, so there is nothing behind it yet. `superseded` = the authority made the successor mandatory, so Beliq will not choose the older ruleset on your behalf; an exact pin still reaches it until `retainedUntil`. */
-                                    fallbackReason: "sunset" | "notice-period" | "superseded" | (never | null);
+                                    /**
+                                     * @description Why `previous` reaches nothing for this artefact; null exactly when `previousVersion` is set. `sunset` = every retained version is past its `retainedUntil`, so not even an exact pin resolves. `notice-period` = the only retained version is the one standing in for `latest` until a scheduled bump takes effect, so there is nothing behind it yet. `superseded` = the authority made the successor mandatory, so Beliq will not choose the older ruleset on your behalf; an exact pin still reaches it until `retainedUntil`.
+                                     * @enum {string|null}
+                                     */
+                                    fallbackReason: "sunset" | "notice-period" | "superseded" | null;
                                 }[];
                             }[];
                             channels: {

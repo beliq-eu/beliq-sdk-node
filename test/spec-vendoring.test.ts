@@ -6,6 +6,58 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const vendored = join(root, 'openapi.json');
 
+interface ObjectSchema {
+  properties?: Record<string, ObjectSchema>;
+  required?: string[];
+  items?: ObjectSchema;
+  anyOf?: ObjectSchema[];
+  oneOf?: ObjectSchema[];
+  allOf?: ObjectSchema[];
+  $ref?: string;
+}
+
+/** The schema of `data` in a 200 answer of POST /v1/parse. */
+const parseData = (): ObjectSchema =>
+  JSON.parse(readFileSync(vendored, 'utf8')).paths['/v1/parse'].post.responses['200'].content[
+    'application/json'
+  ].schema.properties.data;
+
+/**
+ * Every key the schema requires, at every depth, as a path from the schema's
+ * root. Follows `properties`, `items` and the arms of `anyOf`, `oneOf` and
+ * `allOf`. A `$ref` is not followed, so it throws instead of reading as
+ * "requires nothing".
+ */
+function requiredPaths(schema: ObjectSchema, prefix = ''): string[] {
+  if (schema.$ref) throw new Error(`${prefix}$ref: requiredPaths does not follow a reference`);
+  const arms = [...(schema.anyOf ?? []), ...(schema.oneOf ?? []), ...(schema.allOf ?? [])];
+  return [
+    ...(schema.required ?? []).map((key) => prefix + key),
+    ...arms.flatMap((arm) => requiredPaths(arm, prefix)),
+    ...(schema.items ? requiredPaths(schema.items, `${prefix.replace(/\.$/, '')}[].`) : []),
+    ...Object.entries(schema.properties ?? {}).flatMap(([key, child]) =>
+      requiredPaths(child, `${prefix}${key}.`),
+    ),
+  ];
+}
+
+/** Where a value's keys depart from its schema: one it does not declare, or a required one left out. */
+function departures(value: unknown, schema: ObjectSchema, path: string): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item, i) => departures(item, schema.items ?? {}, `${path}[${i}]`));
+  }
+  if (value === null || typeof value !== 'object') return [];
+  const declared = schema.properties ?? {};
+  const held = value as Record<string, unknown>;
+  return [
+    ...Object.keys(held).filter((key) => !(key in declared)).map((key) => `${path}.${key} is not declared`),
+    ...(schema.required ?? []).filter((key) => !(key in held)).map((key) => `${path}.${key} is missing`),
+    ...Object.keys(held)
+      .filter((key) => key in declared)
+      .flatMap((key) => departures(held[key], declared[key], `${path}.${key}`)),
+  ];
+}
+
 /**
  * The vendored spec has to be byte-identical to the copy the API generates and
  * to the one the Python SDK vendors: three copies of one contract, and a client
@@ -61,5 +113,29 @@ describe('vendored openapi.json', () => {
       readFileSync(join(root, 'test', 'fixtures', 'me.json'), 'utf8'),
     ).data;
     expect(Object.keys(fixtureData).sort()).toEqual([...required].sort());
+  });
+
+  /**
+   * A caller may read `invoice.lines` unguarded and no other field of a parsed
+   * invoice. The comment on `ParseResult` says so, and this holds it to the
+   * spec: `locationId.id` is required only inside a `delivery.locationId` that
+   * is itself optional.
+   */
+  it('requires nothing of a parsed invoice but lines', () => {
+    const invoice = parseData().properties?.invoice ?? {};
+    expect(requiredPaths(invoice).sort()).toEqual(['delivery.locationId.id', 'lines']);
+  });
+
+  /**
+   * `parse-fields-left-out.json` is what the parse test with absent fields
+   * reads. A mock returns whatever the fixture says, so its keys are compared
+   * with the spec here, at every depth: none that /v1/parse does not declare,
+   * and none missing that it requires. Its values are not compared.
+   */
+  it('the parse fixture with fields left out has the keys /v1/parse declares', () => {
+    const fixtureData = JSON.parse(
+      readFileSync(join(root, 'test', 'fixtures', 'parse-fields-left-out.json'), 'utf8'),
+    ).data;
+    expect(departures(fixtureData, parseData(), 'data')).toEqual([]);
   });
 });

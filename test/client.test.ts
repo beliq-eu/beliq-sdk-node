@@ -154,6 +154,27 @@ describe('Beliq client', () => {
     });
   });
 
+  it('parse() returns a field only when the answer holds it, and puts nothing in its place', async () => {
+    // What api.beliq.eu answered on 2026-10-08 for a UBL invoice that states no
+    // street or city for the seller, no unit code or VAT category on its line,
+    // and a total with VAT whose text, `1.190,00`, is not an xs:decimal.
+    const { fetchImpl } = mock(() => ({ body: fixture('parse-fields-left-out.json') }));
+    const { invoice, warnings } = await new Beliq({ apiKey, fetch: fetchImpl }).parse('<x/>');
+    expect(invoice.lines).toEqual([
+      { description: 'Control item', quantity: 2, unitPrice: 50, lineTotal: 100, vatRate: 19 },
+    ]);
+    expect(invoice.seller?.address).toEqual({ postalCode: '10115', countryCode: 'DE' });
+    expect(invoice.totalNetAmount).toBe(100);
+    expect(invoice).not.toHaveProperty('totalGrossAmount');
+    // The refused text draws a warning that names the field and the element.
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].code).toBe('PARSE_VALUE_NOT_FOUND');
+    expect(warnings[0].field).toBe('totalGrossAmount');
+    expect(warnings[0].elements).toEqual([
+      { path: '/Invoice/cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount', count: 1 },
+    ]);
+  });
+
   it('generate() posts JSON and returns decoded XML plus header metadata', async () => {
     const xmlDoc = '<?xml version="1.0"?><rsm:CrossIndustryInvoice/>';
     const { fetchImpl, calls } = mock(() => ({
