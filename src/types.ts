@@ -34,7 +34,12 @@ export type ValidationIssue = ValidationResult['errors'][number];
 export type Severity = ValidationIssue['severity'];
 export type ValidationFormat = ValidationResult['format'];
 
-/** Structured invoice extracted from a document (POST /v1/parse). */
+/**
+ * What POST /v1/parse read from a document. Of `invoice`, only `lines` is
+ * always present. Every other field is left out when the answer holds no value
+ * for it, so check for a field before reading it.
+ * https://docs.beliq.eu/api-reference/parse/ says what an absent field means.
+ */
 export type ParseResult = Json200Data<'parseInvoice'>;
 /** One warning about what the document holds and the parsed invoice does not. */
 export type ParseWarning = ParseResult['warnings'][number];
