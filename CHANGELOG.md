@@ -4,6 +4,43 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.5.0 - 2026-10-08
+
+A minor, because code that reads a `parse()` result can stop compiling, and a
+`^0.4.0` range does not reach a minor. Only the types of `parse()` change. No
+method does.
+
+- `ParseResult['invoice']` is the invoice `POST /v1/parse` declares for its
+  answer, where it was the invoice `generate()` takes. It lists the 13 fields
+  the parser returns, and only `lines` is always present:
+  `result.invoice.number` was a `string` and is a `string | undefined`. Below
+  the invoice nothing is required but the `id` of a `delivery.locationId`,
+  which is optional itself. The 35 fields of the generate invoice that parse
+  does not return, such as `allowances`, `paymentMeans` and `taxSummary`, are
+  gone from the type. A line lists 7 fields where it listed 20, a party 4
+  where it listed 9, and a party's address 5 where it listed 9.
+- What stops compiling: a read of a field parse does not return, and
+  `result.invoice` passed where an `Invoice` is expected, or a party, a line,
+  an address or the delivery of it passed where that part of an `Invoice` is.
+  With `strictNullChecks` on, which `strict` includes, so does a field used
+  as always present, such as `result.invoice.seller.name` or a `string` taken
+  from `result.invoice.number`. Check for a field before reading it.
+- The types follow the API, which changed first. Since 2026-10-07
+  `POST /v1/parse` returns a field only when the parser has a value for it,
+  and puts nothing in the place of an absent one. `parse()` hands the answer
+  on as it is, so an installed 0.4.6 gets the same answer, and its types still
+  say that nine fields of the invoice are always there, and more inside a
+  party, an address and a line.
+  https://beliq.eu/changelog/ has the API change under that date.
+  https://docs.beliq.eu/api-reference/parse/ says what an absent field means,
+  and when a `PARSE_VALUE_NOT_FOUND` warning in `result.warnings` names it.
+- The vendored `openapi.json` is document `0.12.0` of the API, up from
+  `0.9.0`. Besides the parsed invoice one thing differs: the 14 nullable
+  fields of `GET /v1/me` and `GET /v1/rulesets` are spelled with
+  `nullable: true`, which is what OpenAPI 3.0 has for a nullable field, where
+  each had an `anyOf` with a `"type": "null"` arm. The type generated for each
+  of the 14 is the same, and two gain an `@enum` doc tag.
+
 ## 0.4.6 - 2026-10-06
 
 - The vendored `openapi.json` carries the four fields `POST /v1/parse` answers
