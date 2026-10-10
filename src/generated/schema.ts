@@ -647,6 +647,8 @@ export interface operations {
                                 profileDetected?: string;
                                 verificationTier?: "conformance-verified" | "builder-round-trip" | "reconstructed-rules" | "xsd-structural";
                                 verificationBadge?: "authority-verified" | "independently-rule-checked" | "structure-checked";
+                                /** @description English display text for `verificationBadge`: the label the English coverage cards and the docs show for that badge. Print it as it is. Compare `verificationBadge`, not this string. */
+                                verificationBadgeLabel?: string;
                                 schematronVersion?: string;
                                 ciusVersion?: string;
                                 peppolVersion?: string;
@@ -976,6 +978,8 @@ export interface operations {
                             profileDetected?: string;
                             verificationTier?: "conformance-verified" | "builder-round-trip" | "reconstructed-rules" | "xsd-structural";
                             verificationBadge?: "authority-verified" | "independently-rule-checked" | "structure-checked";
+                            /** @description English display text for `verificationBadge`: the label the English coverage cards and the docs show for that badge. Print it as it is. Compare `verificationBadge`, not this string. */
+                            verificationBadgeLabel?: string;
                             schematronVersion?: string;
                             ciusVersion?: string;
                             peppolVersion?: string;
@@ -1790,6 +1794,8 @@ export interface operations {
                                 verificationTier: "conformance-verified" | "builder-round-trip" | "reconstructed-rules" | "xsd-structural" | null;
                                 rulesProvenance: "authority-conformance" | "authority-artifact" | "community" | "beliq-authored" | "none";
                                 verificationBadge: "authority-verified" | "independently-rule-checked" | "structure-checked";
+                                /** @description English display text for `verificationBadge`: the label the English coverage cards and the docs show for that badge. Print it as it is. Compare `verificationBadge`, not this string. */
+                                verificationBadgeLabel: string;
                                 releaseDate: string | null;
                                 repo: string | null;
                                 tag: string | null;
