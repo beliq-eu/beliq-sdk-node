@@ -4,6 +4,30 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.5.1 - 2026-10-11
+
+A patch: the types gain two fields and two error codes. No method changes.
+
+- The vendored `openapi.json` is document `0.15.0` of the API, up from
+  `0.12.0`.
+- `ValidationResult` gains `verificationBadgeLabel`, the English label of the
+  badge in `verificationBadge`. It is display text: print it as it is, and
+  compare `verificationBadge` in code. The API sets it only beside the badge,
+  so a result with no badge has no label. The `validationResult` of a sealed
+  `generate()` is the same type and carries it too.
+- `ValidationResult` gains `pdfInput`, which the API sets when the document
+  sent to `validate()` was a PDF: the name of the embedded file the verdict is
+  about, how that file was found, how many candidates the PDF holds, and
+  `containerChecked: false`, because nothing checked the PDF around it.
+- The error code union gains `CONVERSION_OUTPUT_INVALID` and `PDFA_VIOLATION`.
+  `convert()` answers 422 `CONVERSION_OUTPUT_INVALID` when the converted XML
+  fails validation: the document is not returned, and the verdict is in
+  `err.details.validationResult`. `generate()` answers 422 `PDFA_VIOLATION`
+  when veraPDF reports a violation of its PDF/A-3b profile in a ZUGFeRD or
+  Factur-X PDF it built: the PDF is not returned, and the failed rules are in
+  `err.details.failedRules`. A `switch` over the code that TypeScript checks
+  for exhaustiveness needs the two new cases.
+
 ## 0.5.0 - 2026-10-08
 
 A minor, because code that reads a `parse()` result can stop compiling, and a
