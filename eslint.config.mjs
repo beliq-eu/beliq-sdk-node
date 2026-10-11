@@ -2,14 +2,24 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'src/generated/**'] },
+  { ignores: ['dist/**', 'src/generated/**', 'coverage/**'] },
   js.configs.recommended,
   tseslint.configs.recommended,
   {
-    languageOptions: { ecmaVersion: 2022, sourceType: 'module' },
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      parserOptions: {
+        project: './tsconfig.eslint.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/switch-exhaustiveness-check': 'error',
     },
   },
   // scripts/ is plain .mjs run by node, so no-undef is live there (it is off for
