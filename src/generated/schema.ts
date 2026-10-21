@@ -109,7 +109,7 @@ export interface paths {
         };
         /**
          * Active ruleset/artefact versions + ruleset-hash catalog per supported format (public, no quota cost).
-         * @description Public reference for the ruleset versions and artifact hashes Beliq pins. `artifacts` is the ruleset-hash catalog: each rule artifact that can run for a publicly-supported format, with the SHA-256 of its exact file bytes. To verify a `POST /v1/validate` response for a publicly-supported format, confirm each of its `rulesetArtifacts` components appears here, then reproduce its `rulesetSha256` by sorting the components’ `"<key>@<version>=<fileSha256>"` lines, joining with newlines, and taking the SHA-256. (The `rulesetSha256` reproduction needs only the response’s own components, so it holds for any result. Formats beliq carries on no public surface run real, pinned artifacts that are intentionally omitted here, so their components will not appear in this catalog.) For compiled-Schematron families the published hash proves the artifact Beliq ran is the one Beliq pins, not a value reproducible from the authority’s raw source. `scheduledChanges` lists announced bumps that have not taken effect yet; each row names both the `formats` and the `capabilities` the changing artifact judges, and a bump can reach you through a capability alone. Each entry’s `previousChannel` says what `Beliq-Ruleset: previous` resolves to for that format today, one row per rule artifact, so you do not have to derive it from the `retained[]` dates: a retained version can be pinnable and still not be what the channel chooses.
+         * @description Public reference for the ruleset versions and artifact hashes Beliq pins. `artifacts` is the ruleset-hash catalog: each rule artifact that can run for a publicly-supported format, with the SHA-256 of its exact file bytes. To verify a `POST /v1/validate` response for a publicly-supported format, confirm each of its `rulesetArtifacts` components appears here, then reproduce its `rulesetSha256` by sorting the components’ `"<key>@<version>=<fileSha256>"` lines, joining with newlines, and taking the SHA-256. (The `rulesetSha256` reproduction needs only the response’s own components, so it holds for any result. Formats beliq carries on no public surface run real, pinned artifacts that are intentionally omitted here, so their components will not appear in this catalog.) For compiled-Schematron families the published hash proves the artifact Beliq ran is the one Beliq pins, not a value reproducible from the authority’s raw source. `scheduledChanges` lists announced bumps that have not taken effect yet; each row names both the `formats` and the `capabilities` the changing artifact judges, and a bump can reach you through a capability alone. Each entry’s `previousChannel` says what `Beliq-Ruleset: previous` resolves to for that format today, one row per rule artifact, so you do not have to derive it from the `retained[]` dates: a retained version can be pinnable and still not be what the channel chooses. Each row also carries that artifact's own `retained[]`, which dates an overlay that has no entry of its own.
          */
         get: operations["getRulesets"];
         put?: never;
@@ -1824,6 +1824,18 @@ export interface operations {
                                      * @enum {string|null}
                                      */
                                     fallbackReason: "sunset" | "notice-period" | "superseded" | null;
+                                    /** @description The retained versions of this artefact, with the dates that bound each one. For the format's own `versionKey` they are the entry's `retained`. For an overlay or a severity table, which has no entry of its own, this is where its retained version and its `retainedUntil` are published. Repeated under each format the artefact judges. */
+                                    retained: {
+                                        version: string;
+                                        /** @description ISO 8601 date (YYYY-MM-DD) the authority released this version, or null when it publishes none. */
+                                        releaseDate: string | null;
+                                        /** @description ISO 8601 date (YYYY-MM-DD) Beliq started serving this version as `latest`. */
+                                        servingFrom: string;
+                                        /** @description ISO 8601 date (YYYY-MM-DD) after which this version is no longer served at all, or null when nothing retires it. The last day an exact pin resolves; after it, the pin returns a 422. */
+                                        retainedUntil: string | null;
+                                        /** @description ISO 8601 date (YYYY-MM-DD) the authority made this version's successor mandatory, or null when it published no date. Once it has passed, `Beliq-Ruleset: previous` no longer resolves to this version and sets `rulesetFellBack: true`, because a document built to it is rejected by the receiving corner. An exact version pin is unaffected and still reaches it until `retainedUntil`. */
+                                        supersededMandatoryOn: string | null;
+                                    }[];
                                 }[];
                             }[];
                             channels: {
