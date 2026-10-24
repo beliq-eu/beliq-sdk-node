@@ -35,7 +35,8 @@ describe('verdictWord', () => {
 
 describe('checkDepth', () => {
   it('passes the label on as the API sent it', () => {
-    expect(checkDepth(schema)).toBe('Schema-checked');
+    expect(schema.verificationBadgeLabel).toBeDefined();
+    expect(checkDepth(schema)).toBe(schema.verificationBadgeLabel);
   });
 
   it('names no depth when the API sent no label', () => {

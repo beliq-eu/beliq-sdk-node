@@ -1,8 +1,8 @@
 # @beliq/sdk
 
-Official Node/TypeScript SDK for the [beliq](https://beliq.eu) API: validate, generate, convert and parse EU e-invoices (XRechnung, ZUGFeRD, Factur-X, Peppol BIS) from Node.js. A validation result names the rule pack that judged the document, its version and, in `verificationBadgeLabel`, how deep the check went. [How verification works](https://docs.beliq.eu/compliance/how-verification-works/) explains each depth.
+Official Node/TypeScript SDK for the [beliq](https://beliq.eu) API: validate, generate, convert and parse EU e-invoices (XRechnung, ZUGFeRD, Factur-X, Peppol BIS) from Node.js. A validation result names the rule pack that judged the document, its version and, in `verificationBadgeLabel` when the API states one, how deep the check went. [How verification works](https://docs.beliq.eu/compliance/how-verification-works/) explains each depth.
 
-beliq produces and checks the document. Transmission (Peppol, PDP, KSeF, SDI), archiving, and tax-authority reporting stay with your access point.
+beliq produces and checks the document. Transmission (Peppol, plateforme agréée, KSeF, SDI), archiving, and tax-authority reporting stay with your access point.
 
 ## Install
 
@@ -60,7 +60,7 @@ const generated = await beliq.generate({
 });
 console.log(generated.xml, generated.meta.schematronVersion);
 
-// Validate a document. The result names the rules that ran and the check depth.
+// Validate a document. The result names the rules that ran and, when the API states one, the check depth.
 const result = await beliq.validate(generated.xml!, { format: 'auto' });
 if (!result.valid) {
   for (const issue of result.errors) console.log(issue.ruleId, issue.message);
