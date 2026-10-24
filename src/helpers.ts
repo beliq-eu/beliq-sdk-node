@@ -28,3 +28,15 @@ export {
   LIVE_CONVERT_TARGET_FORMATS,
 } from './constants';
 export type { GeneratePreset } from './constants';
+
+export {
+  DEPTH_NOT_STATED,
+  FRANCE_CTC_BLOCKING_FINDING_RULE_ID,
+  CONVERT_PDF_LINE,
+  verdictWord,
+  checkDepth,
+  franceBlockingRuleIds,
+  franceBlockLines,
+  pdfInputLine,
+  rulesetChannelLine,
+} from './verdict';

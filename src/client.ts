@@ -208,7 +208,7 @@ function convertMeta(headers: Headers): ConvertMeta {
   };
 }
 
-/** Typed client for the beliq e-invoicing compliance API. */
+/** Typed client for the beliq e-invoice API. */
 export class Beliq {
   readonly #config: ResolvedConfig;
 
@@ -241,7 +241,7 @@ export class Beliq {
     return this.#json<AccountInfo>({ operation: 'me' });
   }
 
-  /** Generate a compliant e-invoice from an EN 16931 object. */
+  /** Generate an e-invoice from an EN 16931 object. */
   async generate(input: GenerateInput): Promise<GenerateResult> {
     const res = await send(
       this.#config,
@@ -279,7 +279,7 @@ export class Beliq {
     };
   }
 
-  /** Validate a document against authority-pinned rules. */
+  /** Validate a document. The result names the rules that ran and, in `verificationBadgeLabel` when the API states one, the check depth. */
   async validate(document: DocumentInput, options: ValidateOptions = {}): Promise<ValidationResult> {
     return this.#json<ValidationResult>({
       operation: 'validate',
