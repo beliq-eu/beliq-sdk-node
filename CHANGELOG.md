@@ -18,8 +18,8 @@ PDF, and the vendored spec moves on two documents. No method changes.
   depth the API did not state.
 - `CONVERT_PDF_LINE` says what a PDF that `convert()` returns for a `facturx`
   or `zugferd` target is: the PDF as sent, with only its annotation flags
-  normalised for PDF/A, when its embedded XML already is the target, and
-  otherwise that PDF re-wrapped around the converted XML and passed by
+  normalised for PDF/A and its container not checked, when its embedded XML
+  already is the target, and otherwise that PDF re-wrapped around the converted XML and passed by
   veraPDF against PDF/A-3b. With a test key the PDF is watermarked after any
   veraPDF check, so the line never says veraPDF checked the file returned.
 - The vendored `openapi.json` is document `0.16.0` of the API, up from

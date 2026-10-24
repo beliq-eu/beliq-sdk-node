@@ -68,6 +68,11 @@ describe('France CTC block', () => {
     ]);
   });
 
+  it('reads a partial result with no warnings at all', () => {
+    const partial = { franceCtcBlockingRuleIds: ['BR-FR-10_BT-30'] } as unknown as ValidationResult;
+    expect(franceBlockLines(partial)).toEqual(['France CTC blocking rule ids: BR-FR-10_BT-30']);
+  });
+
   it('gives the ids alone when the result carries no message for them', () => {
     expect(franceBlockLines({ franceCtcBlockingRuleIds: ['BR-FR-10_BT-30'], warnings: [] })).toEqual([
       'France CTC blocking rule ids: BR-FR-10_BT-30',
@@ -101,7 +106,7 @@ describe('pdfInputLine', () => {
         containerChecked: false,
         attachmentFoundBy: 'associated-file',
         attachmentCandidates: 1,
-        attachmentName: 'a"\nVALID x.xml',
+        attachmentName: 'a"\nVALID\u2028x.xml',
       },
     });
     expect(line).toContain('"a??VALID?x.xml"');
@@ -127,8 +132,9 @@ describe('rulesetChannelLine', () => {
 describe('CONVERT_PDF_LINE', () => {
   it('names both PDF paths and never claims a check for a test-key PDF', () => {
     expect(CONVERT_PDF_LINE).toContain('the one sent');
+    expect(CONVERT_PDF_LINE).toContain('the PDF container was not');
     expect(CONVERT_PDF_LINE).toContain('re-wrapped around the converted XML');
     expect(CONVERT_PDF_LINE).toContain('watermarked last, after any veraPDF check');
-    expect(CONVERT_PDF_LINE).not.toMatch(/not checked/);
+    expect(CONVERT_PDF_LINE).not.toContain('the PDF around it was not checked');
   });
 });

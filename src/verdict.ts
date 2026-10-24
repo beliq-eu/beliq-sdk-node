@@ -22,7 +22,7 @@ export const FRANCE_CTC_BLOCKING_FINDING_RULE_ID = 'FRANCE_CTC_FINDINGS_BLOCK_TR
  * file": the watermark comes after the check, and the watermarked file does not pass it.
  */
 export const CONVERT_PDF_LINE =
-  'The PDF is the one sent, with only its annotation flags normalised for PDF/A, when its embedded XML already is the target. ' +
+  'The PDF is the one sent, with only its annotation flags normalised for PDF/A, when its embedded XML already is the target: that XML was checked and the PDF container was not. ' +
   'Otherwise it is that PDF re-wrapped around the converted XML, returned only after veraPDF passed it against PDF/A-3b. ' +
   'With a test key the PDF is watermarked last, after any veraPDF check. ' +
   'Detail: https://docs.beliq.eu/api-reference/convert/#a-pdf-sent-for-a-zugferd-or-factur-x-target';
@@ -56,7 +56,8 @@ export function franceBlockLines(
 ): string[] {
   const ids = franceBlockingRuleIds(result);
   if (ids.length === 0) return [];
-  const entry = result.warnings.find((w) => w.ruleId === FRANCE_CTC_BLOCKING_FINDING_RULE_ID);
+  // A JavaScript caller can pass a partial result with no `warnings`.
+  const entry = (result.warnings ?? []).find((w) => w.ruleId === FRANCE_CTC_BLOCKING_FINDING_RULE_ID);
   const idLine = `France CTC blocking rule ids: ${ids.join(', ')}`;
   if (!entry) return [idLine];
   const named = new Set(entry.message.split(/[^A-Za-z0-9_-]+/));
