@@ -1,0 +1,19 @@
+{
+  "valid": true,
+  "format": "fatturapa",
+  "errors": [],
+  "warnings": [],
+  "sha256": "e26b32f39ac87824d3255f3a9d2b5f06de6cd52dfba705ad057227a5a6d8c30b",
+  "rulesetSha256": "e682e2c04d0e302f9349f959e0fa36bdaccd5fc0183049298c0a4fbfe528bf60",
+  "rulesetArtifacts": [
+    {
+      "key": "italy_fatturapa",
+      "version": "1.4-runtime-2026-05-01",
+      "fileSha256": "e8fd1160860ed4ca5acebc773c624892771ebaf3ed604faa1a4c7631874fc00f"
+    }
+  ],
+  "driftCheckedAt": "2026-10-10T11:21:32Z",
+  "profileDetected": "italy-fatturapa-pa-fpa12",
+  "italyFatturapaXsdBundle": "FatturaPA XSD (v1.4 export path); ordinaria+PA 1.2.3; semplificata 1.0.2",
+  "italyFatturapaRuntimeVersion": "1.4-runtime-2026-05-01"
+}

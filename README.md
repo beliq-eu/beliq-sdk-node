@@ -1,8 +1,8 @@
 # @beliq/sdk
 
-Official Node/TypeScript SDK for the [beliq](https://beliq.eu) e-invoicing compliance API. Generate, validate, parse, and convert EN 16931 invoices (XRechnung, ZUGFeRD, Factur-X, Peppol BIS) against authority-pinned, nightly-drift-checked rules.
+Official Node/TypeScript SDK for the [beliq](https://beliq.eu) API: validate, generate, convert and parse EU e-invoices (XRechnung, ZUGFeRD, Factur-X, Peppol BIS) from Node.js. A validation result names the rule pack that judged the document, its version and, in `verificationBadgeLabel`, how deep the check went. [How verification works](https://docs.beliq.eu/compliance/how-verification-works/) explains each depth.
 
-beliq produces and checks the compliant document. Transmission (Peppol, PDP, KSeF, SDI), archiving, and tax-authority reporting stay with your access point.
+beliq produces and checks the document. Transmission (Peppol, PDP, KSeF, SDI), archiving, and tax-authority reporting stay with your access point.
 
 ## Install
 
@@ -60,7 +60,7 @@ const generated = await beliq.generate({
 });
 console.log(generated.xml, generated.meta.schematronVersion);
 
-// Validate any document against authority-pinned rules.
+// Validate a document. The result names the rules that ran and the check depth.
 const result = await beliq.validate(generated.xml!, { format: 'auto' });
 if (!result.valid) {
   for (const issue of result.errors) console.log(issue.ruleId, issue.message);
@@ -152,6 +152,17 @@ import { LIVE_GENERATE_PRESETS } from '@beliq/sdk';
 
 const nlcius = LIVE_GENERATE_PRESETS.find((p) => p.id === 'nlcius');
 await beliq.generate({ standard: nlcius!.standard, profile: nlcius!.profile, invoice });
+```
+
+### Verdict and convert wording
+
+`@beliq/sdk/helpers` holds the words the beliq tools print for a verdict, so each tool says the same thing. `verdictWord` gives `VALID`, `INVALID`, or `NOT VALIDATED` when no ruleset ran. `checkDepth` gives `verificationBadgeLabel` as the API sent it, or `check depth not stated` when it sent none. `franceBlockLines` gives the API's explanation when `franceCtcBlockingRuleIds` is present. `pdfInputLine` and `rulesetChannelLine` restate `pdfInput` and the ruleset channel. `CONVERT_PDF_LINE` says what a PDF that `convert` returns is.
+
+```ts
+import { checkDepth, franceBlockLines, verdictWord } from '@beliq/sdk/helpers';
+
+const result = await beliq.validate(xml);
+console.log(...franceBlockLines(result), `${verdictWord(result)} (${checkDepth(result)})`);
 ```
 
 Every option enum is typed from the OpenAPI spec, so wrong values fail at compile time. Errors throw `BeliqApiError` with a typed `.code`, HTTP `.status`, and any `.details`:

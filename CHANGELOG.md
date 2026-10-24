@@ -4,6 +4,30 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.5.2 - 2026-10-24
+
+A patch: `@beliq/sdk/helpers` gains the wording for a verdict and a converted
+PDF, and the vendored spec moves on two documents. No method changes.
+
+- `verdictWord`, `checkDepth` and `DEPTH_NOT_STATED`, `franceBlockingRuleIds`,
+  `franceBlockLines` and `FRANCE_CTC_BLOCKING_FINDING_RULE_ID`, `pdfInputLine`
+  and `rulesetChannelLine` are the words beliq-cli and beliq-mcp printed from
+  two copies of their own. Each restates a field of `ValidationResult`.
+  `checkDepth` gives `verificationBadgeLabel` as it came, or
+  `check depth not stated` when the API sent no label, so it never names a
+  depth the API did not state.
+- `CONVERT_PDF_LINE` says what a PDF that `convert()` returns for a `facturx`
+  or `zugferd` target is: the PDF as sent, with only its annotation flags
+  normalised for PDF/A, when its embedded XML already is the target, and
+  otherwise that PDF re-wrapped around the converted XML and passed by
+  veraPDF against PDF/A-3b. With a test key the PDF is watermarked after any
+  veraPDF check, so the line never says veraPDF checked the file returned.
+- The vendored `openapi.json` is document `0.16.0` of the API, up from
+  `0.15.0`. Document `0.15.1` describes the PDF re-wrap in `convert()`'s
+  description. Document `0.16.0` gives each `previousChannel` row of
+  `GET /v1/rulesets` a `retained` list, in the generated `operations` type
+  only: the SDK has no method for that route.
+
 ## 0.5.1 - 2026-10-11
 
 A patch: the types gain two fields and two error codes. No method changes.
