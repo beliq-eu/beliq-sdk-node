@@ -9,7 +9,26 @@ permissions:
   contents: read
 
 jobs:
+  # tsup 9 runs only on Node ^22.18 || ^24.11, so the build cannot share the test matrix,
+  # which keeps the engines floor. 24 is the Node release.yml builds the published package on.
   build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run scrub:check
+      # Fails if src/generated/schema.ts drifts from openapi.json.
+      - run: npm run openapi:check
+
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -22,12 +41,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
-      - run: npm run build
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run scrub:check
-      # Fails if src/generated/schema.ts drifts from openapi.json.
-      - run: npm run openapi:check
       - run: npm test
 
 
@@ -107,15 +120,16 @@ jobs:
   guard:
     uses: beliq-eu/.github/.github/workflows/guard.yml@9d3241faa3da6af5297699d3f8ba8e39c8cd401f # main
 
-  # Branch protection requires this one check instead of each leg of the `build` matrix, so
-  # adding or dropping a version needs no change there. It passes only when every leg passed.
+  # Branch protection requires this one check instead of the build and each leg of the `test`
+  # matrix, so adding or dropping a version needs no change there. It passes only when all passed.
   ci-ok:
     if: ${{ always() }}
-    needs: [build]
+    needs: [build, test]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Every leg of the build matrix passed
+      - name: The build and every leg of the test matrix passed
         env:
-          RESULT: ${{ needs.build.result }}
-        run: test "$RESULT" = success
+          BUILD: ${{ needs.build.result }}
+          TEST: ${{ needs.test.result }}
+        run: test "$BUILD" = success && test "$TEST" = success
