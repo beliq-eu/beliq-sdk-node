@@ -245,6 +245,17 @@ describe('Beliq client', () => {
     expect(decode(result.bytes)).toBe(ublDoc);
   });
 
+  it('convert() leaves conversionTools undefined when the API sends no x-conversion-tools', async () => {
+    const { fetchImpl } = mock(() => ({
+      body: '<Invoice/>',
+      headers: { 'content-type': 'application/xml', 'x-source-format': 'cii', 'x-target-format': 'ubl' },
+    }));
+    const result = await new Beliq({ apiKey, fetch: fetchImpl }).convert('<rsm:CrossIndustryInvoice/>', {
+      targetFormat: 'ubl',
+    });
+    expect(result.meta.conversionTools).toBeUndefined();
+  });
+
   it('derives livemode from the key prefix without a request', () => {
     expect(new Beliq({ apiKey: 'blq_test_abc' }).livemode).toBe(false);
     expect(new Beliq({ apiKey: 'blq_live_abc' }).livemode).toBe(true);

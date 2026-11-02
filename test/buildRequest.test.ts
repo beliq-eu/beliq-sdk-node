@@ -91,9 +91,9 @@ describe('buildRequest - validate', () => {
     expect(buildRequest(raw('validate', { validateFormat: 'cii' })).query).toEqual({ format: 'cii' });
   });
 
-  it('merges advanced JSON into the query', () => {
-    expect(buildRequest(raw('validate', { validateFormat: 'auto', advanced: { strict: true } })).query)
-      .toEqual({ format: 'auto', strict: true });
+  it('merges advanced JSON into the query (advanced wins)', () => {
+    expect(buildRequest(raw('validate', { validateFormat: 'auto', franceCtc: false, advanced: { franceCtc: true } })).query)
+      .toEqual({ format: 'auto', franceCtc: true });
   });
 });
 
