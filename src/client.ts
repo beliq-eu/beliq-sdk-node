@@ -81,7 +81,11 @@ export interface GenerateInput {
 export interface DocumentOptions {
   /** Override the sniffed request content type (application/xml | application/pdf). */
   contentType?: string;
-  /** Raw JSON deep-merged into the query. */
+  /**
+   * Raw JSON deep-merged into the query; its values win over the named options.
+   * The API answers 400 `VALIDATION_ERROR` to a query key the operation does not
+   * declare, and `details.fields` names it.
+   */
   advanced?: PlainObject;
 }
 
