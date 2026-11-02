@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   LIVE_GENERATE_PRESETS,
   LIVE_GENERATE_STANDARDS,
+  LIVE_PARSE_FORMATS,
   LIVE_PROFILES_BY_STANDARD,
+  LIVE_VALIDATE_FORMATS,
   isProfileAllowedForStandard,
   profilesForStandard,
 } from '../src/index';
+import { PARSE_FORMATS_LEFT_OUT, VALIDATE_FORMATS_LEFT_OUT } from '../src/constants';
 import spec from '../openapi.json' with { type: 'json' };
 
 describe('LIVE_GENERATE_PRESETS', () => {
@@ -126,5 +129,25 @@ describe('LIVE_PROFILES_BY_STANDARD', () => {
   it('defers to the API for a standard it does not know', () => {
     expect(profilesForStandard('sdi_messaggio')).toEqual([]);
     expect(isProfileAllowedForStandard('sdi_messaggio', 'ordinaria')).toBe(true);
+  });
+});
+
+describe('LIVE_VALIDATE_FORMATS and LIVE_PARSE_FORMATS', () => {
+  type FormatParam = { name: string; schema: { anyOf: readonly { enum: readonly string[] }[] } };
+  type FormatSpec = { paths: Record<string, { post: { parameters: readonly FormatParam[] } }> };
+
+  const specFormats = (path: string): string[] => {
+    const param = (spec as unknown as FormatSpec).paths[path].post.parameters.find((p) => p.name === 'format');
+    return (param?.schema.anyOf ?? []).flatMap((member) => member.enum);
+  };
+
+  it.each([
+    ['/v1/validate', LIVE_VALIDATE_FORMATS, VALIDATE_FORMATS_LEFT_OUT],
+    ['/v1/parse', LIVE_PARSE_FORMATS, PARSE_FORMATS_LEFT_OUT],
+  ] as const)('%s: each value of the format enum is offered or left out with a reason, once', (path, offered, leftOut) => {
+    expect([...offered, ...Object.keys(leftOut)].sort()).toEqual(specFormats(path).sort());
+    for (const [value, reason] of Object.entries(leftOut)) {
+      expect(reason.trim(), value).not.toBe('');
+    }
   });
 });

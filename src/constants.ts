@@ -1,9 +1,9 @@
 // Curated option lists for end-user UX surfaces (connector dropdowns, docs).
-// Each list carries every value the API accepts for its operation, which is
-// also every format GET /v1/rulesets publishes, each wearing the badge that
-// says how deep its check goes. A list narrower than the API's own enum states
-// its reason beside it. The generated types in ./generated stay faithful to
-// the full API surface; these constants are what we surface to users.
+// Each list carries every value the API accepts for its operation. A list
+// narrower than the API's own enum states its reason beside it.
+// GET /v1/rulesets carries each format's badge, which says how deep its check
+// goes. The generated types in ./generated stay faithful to the full API
+// surface; these constants are what we surface to users.
 
 export const DEFAULT_BASE_URL = 'https://api.beliq.eu';
 
@@ -110,9 +110,44 @@ export function isProfileAllowedForStandard(standard: string, profile: string): 
   return allowed.length === 0 || allowed.includes(profile);
 }
 
-export const LIVE_VALIDATE_FORMATS = ['auto', 'cii', 'ubl'] as const;
+/**
+ * The `format` values POST /v1/validate accepts that are offered. A named
+ * syntax makes the API validate the document as that syntax; `auto` reads it
+ * from the document.
+ */
+export const LIVE_VALIDATE_FORMATS = [
+  'auto',
+  'cii',
+  'ubl',
+  'fatturapa',
+  'facturae',
+  'eslog',
+  'poland_ksef_fa3',
+] as const;
+
+/** The validate `format` values left out of LIVE_VALIDATE_FORMATS. `auto` still recognises both. */
+export const VALIDATE_FORMATS_LEFT_OUT: Readonly<Record<string, string>> = {
+  sdi_messaggio:
+    'An SdI file message, not an invoice. GET /v1/rulesets has no entry for it.',
+  poland_ksef_fa2:
+    'The API answers every FA(2) document `valid: false`, led by a `POLAND_KSEF_FA2_SUPERSEDED` error. '
+    + 'GET /v1/rulesets has no entry for it.',
+};
 
 export const LIVE_PARSE_FORMATS = ['auto', 'cii', 'ubl'] as const;
+
+const PARSE_READS_CII_AND_UBL =
+  'POST /v1/parse ignores `format` and reads CII and UBL documents only: the `format` its response states is one of the two.';
+
+/** The parse `format` values left out of LIVE_PARSE_FORMATS. */
+export const PARSE_FORMATS_LEFT_OUT: Readonly<Record<string, string>> = {
+  fatturapa: PARSE_READS_CII_AND_UBL,
+  facturae: PARSE_READS_CII_AND_UBL,
+  eslog: PARSE_READS_CII_AND_UBL,
+  sdi_messaggio: PARSE_READS_CII_AND_UBL,
+  poland_ksef_fa2: PARSE_READS_CII_AND_UBL,
+  poland_ksef_fa3: PARSE_READS_CII_AND_UBL,
+};
 
 export const LIVE_CONVERT_SOURCE_FORMATS = [
   'auto',
