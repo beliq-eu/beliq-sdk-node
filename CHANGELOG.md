@@ -4,6 +4,40 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.6.0 - 2026-11-03
+
+A minor, because code can stop compiling in two places, and a `^0.5.0` range
+does not reach a minor.
+
+- `ConvertMeta.lostElements` holds the entries of `x-lost-elements` as the API
+  sends them. Each is a `LostElement` with `path`, `value`, `reason`, `severity`
+  and `acceptableLoss`, as
+  https://docs.beliq.eu/api-reference/convert/#lostelement-schema describes.
+  Past the API's 6 KB header cap the list holds one `LostElementsTruncated`
+  entry, `{ truncated: true, reason? }`, instead, and `lostElementsCount` stays
+  the exact count. The field was typed `string[]` and held `"[object Object]"`
+  for every entry, so code that reads an entry as a string stops compiling.
+  Both types are exported.
+- The vendored `openapi.json` is document `0.23.0` of the API, up from
+  `0.16.0`. In the generated types, `generate()`'s `invoice.spain` (Facturae)
+  takes only the value the engine builds for each field: `modality` `I`,
+  `invoiceIssuerType` `EM`, `invoiceDocumentType` `FC`, `invoiceClass` `OO`
+  and `taxTypeCode` `01`. `invoice.poland` (KSeF) takes only `"2"` for
+  `adnotacje.P_18`, `adnotacje.P_23`, `jst` and `gv`. Code that passes another
+  value stops compiling. The API refuses those values.
+- The error code union gains `DATABASE_UNAVAILABLE`, a 503 on every route,
+  which the client retries like any 503. A `switch` over the code that
+  TypeScript checks for exhaustiveness needs the new case.
+- `ValidateFormat` and `ParseFormat` take `poland_ksef_fa2`.
+- `LIVE_VALIDATE_FORMATS` gains `fatturapa`, `facturae`, `eslog` and
+  `poland_ksef_fa3`, the four national formats `GET /v1/rulesets` lists, each
+  Schema-checked. A tool that builds a validate option list from it offers the
+  four. `LIVE_PARSE_FORMATS` stays `auto`, `cii` and `ubl`, because
+  `POST /v1/parse` reads CII and UBL only.
+- `advanced` on `validate()`, `parse()` and `convert()` is merged into the
+  query. The API answers 400 `VALIDATION_ERROR` to a query key the operation
+  does not declare, and `err.details.fields` names it.
+
 ## 0.5.2 - 2026-10-24
 
 A patch: `@beliq/sdk/helpers` gains the wording for a verdict and a converted
