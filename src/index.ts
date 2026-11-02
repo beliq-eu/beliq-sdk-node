@@ -10,6 +10,8 @@ export type {
   ConvertOptions,
   ConvertResult,
   ConvertMeta,
+  LostElement,
+  LostElementsTruncated,
 } from './client';
 
 export { BeliqApiError } from './errors';
