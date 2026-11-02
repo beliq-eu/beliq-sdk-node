@@ -218,15 +218,23 @@ describe('Beliq client', () => {
 
   it('convert() posts raw bytes and maps conversion metadata headers', async () => {
     const ublDoc = '<Invoice xmlns="urn:oasis:names:specification:ubl"/>';
+    const cac = '{urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2}';
+    const lostElements = ['AccountingSupplierParty', 'AccountingCustomerParty'].map((party) => ({
+      path: `/Invoice/${cac}${party}/${cac}Party/cbc:EndpointID`,
+      value: null,
+      reason: 'Peppol endpoint stripped (target is not peppol-bis)',
+      severity: 'info',
+      acceptableLoss: true,
+    }));
     const { fetchImpl, calls } = mock(() => ({
       body: ublDoc,
       headers: {
         'content-type': 'application/xml',
-        'x-source-format': 'cii',
+        'x-source-format': 'peppol-bis',
         'x-target-format': 'ubl',
-        'x-profile-detected': 'en16931',
+        'x-profile-detected': 'peppol-bis',
         'x-lost-elements-count': '2',
-        'x-lost-elements': '["BT-22","BT-23"]',
+        'x-lost-elements': JSON.stringify(lostElements),
         'x-conversion-tools': 'beliq-engine@1.0',
         'x-beliq-livemode': 'false',
       },
@@ -239,10 +247,27 @@ describe('Beliq client', () => {
     expect(calls[0].headers['Content-Type']).toBe('application/xml');
     expect(result.meta.targetFormat).toBe('ubl');
     expect(result.meta.lostElementsCount).toBe(2);
-    expect(result.meta.lostElements).toEqual(['BT-22', 'BT-23']);
+    expect(result.meta.lostElements).toEqual(lostElements);
     expect(result.meta.conversionTools).toBe('beliq-engine@1.0');
     expect(result.meta.livemode).toBe(false);
     expect(decode(result.bytes)).toBe(ublDoc);
+  });
+
+  it('convert() keeps the truncation entry the API sends in place of a list past its header cap', async () => {
+    const truncated = { truncated: true, reason: '412 entries passed the header cap' };
+    const { fetchImpl } = mock(() => ({
+      body: '<Invoice/>',
+      headers: {
+        'content-type': 'application/xml',
+        'x-lost-elements-count': '412',
+        'x-lost-elements': JSON.stringify([truncated]),
+      },
+    }));
+    const result = await new Beliq({ apiKey, fetch: fetchImpl }).convert('<rsm:CrossIndustryInvoice/>', {
+      targetFormat: 'ubl',
+    });
+    expect(result.meta.lostElementsCount).toBe(412);
+    expect(result.meta.lostElements).toEqual([truncated]);
   });
 
   it('convert() leaves conversionTools undefined when the API sends no x-conversion-tools', async () => {

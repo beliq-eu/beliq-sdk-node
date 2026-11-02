@@ -129,7 +129,7 @@ shorter than the server's own turns completed work into an unknown outcome. Set
 | `parse(document, options?)` | POST /v1/parse | XML or PDF | `ParseResult` |
 | `convert(document, options)` | POST /v1/convert | XML or PDF | `{ contentType, bytes, meta }` |
 
-`document` accepts a `string`, `Uint8Array`, `Buffer`, `ArrayBuffer`, or typed array. The content type is sniffed from the bytes (PDF vs XML) unless you pass `options.contentType`. `generate` and `convert` return raw document bytes plus the response-header metadata (`schematronVersion`, `pdfKind`, `sourceFormat`/`targetFormat`, `lostElements`, `conversionTools`, `livemode`); for an XML output, `generate` also decodes `xml`.
+`document` accepts a `string`, `Uint8Array`, `Buffer`, `ArrayBuffer`, or typed array. The content type is sniffed from the bytes (PDF vs XML) unless you pass `options.contentType`. `generate` and `convert` return raw document bytes plus the response-header metadata (`schematronVersion`, `pdfKind`, `sourceFormat`/`targetFormat`, `lostElements`, `conversionTools`, `livemode`); for an XML output, `generate` also decodes `xml`. Each entry of `lostElements` is a `LostElement` as https://docs.beliq.eu/api-reference/convert/#lostelement-schema describes it, except past the API's 6 KB header cap, where the list holds one `{ truncated: true, reason }` entry instead and `lostElementsCount` stays the exact count.
 
 ### Verify-it-yourself seal
 

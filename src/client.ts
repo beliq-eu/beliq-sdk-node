@@ -131,13 +131,31 @@ export interface GenerateResult {
   meta: GenerateMeta;
 }
 
+/** One loss a conversion recorded: https://docs.beliq.eu/api-reference/convert/#lostelement-schema */
+export interface LostElement {
+  path: string;
+  value: string | null;
+  reason: string;
+  severity: 'info' | 'warning';
+  acceptableLoss: boolean;
+}
+
+/**
+ * The one entry `lostElements` holds in place of the list when the list would pass
+ * the API's 6 KB header cap. `lostElementsCount` stays the exact count.
+ */
+export interface LostElementsTruncated {
+  truncated: true;
+  reason?: string;
+}
+
 /** Header metadata returned alongside a converted document. */
 export interface ConvertMeta {
   sourceFormat?: string;
   targetFormat?: string;
   profileDetected?: string;
   lostElementsCount?: number;
-  lostElements?: string[];
+  lostElements?: Array<LostElement | LostElementsTruncated>;
   conversionTools?: string;
   /** True for a live key, false for a blq_test_ sandbox key. */
   livemode?: boolean;
@@ -178,6 +196,18 @@ function parseRulesetArtifacts(headers: Headers): RulesetArtifact[] | undefined 
   }
 }
 
+function parseLostElements(headers: Headers): ConvertMeta['lostElements'] {
+  const raw = headers.get('x-lost-elements');
+  if (!raw) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as NonNullable<ConvertMeta['lostElements']>) : undefined;
+  } catch {
+    // A non-JSON header is treated as absent rather than fatal.
+    return undefined;
+  }
+}
+
 function generateMeta(headers: Headers): GenerateMeta {
   return {
     schematronVersion: headers.get('x-schematron-version') ?? undefined,
@@ -190,23 +220,13 @@ function generateMeta(headers: Headers): GenerateMeta {
 }
 
 function convertMeta(headers: Headers): ConvertMeta {
-  let lostElements: string[] | undefined;
-  const lostRaw = headers.get('x-lost-elements');
-  if (lostRaw) {
-    try {
-      const parsed: unknown = JSON.parse(lostRaw);
-      if (Array.isArray(parsed)) lostElements = parsed.map(String);
-    } catch {
-      // A non-JSON header is treated as absent rather than fatal.
-    }
-  }
   const countRaw = headers.get('x-lost-elements-count');
   return {
     sourceFormat: headers.get('x-source-format') ?? undefined,
     targetFormat: headers.get('x-target-format') ?? undefined,
     profileDetected: headers.get('x-profile-detected') ?? undefined,
     lostElementsCount: countRaw != null ? Number(countRaw) : undefined,
-    lostElements,
+    lostElements: parseLostElements(headers),
     conversionTools: headers.get('x-conversion-tools') ?? undefined,
     livemode: livemodeHeader(headers),
   };
