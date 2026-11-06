@@ -106,6 +106,11 @@ describe('buildRequest - validate', () => {
     expect(buildRequest(raw('validate', { validateFormat: 'auto' })).headers).toBeUndefined();
   });
 
+  it('treats a null ruleset from a plain-JS caller as unset', () => {
+    const ruleset = null as unknown as string;
+    expect(buildRequest(raw('validate', { validateFormat: 'auto', ruleset })).headers).toBeUndefined();
+  });
+
   it('sets no Beliq-Ruleset header on the other operations', () => {
     for (const op of ['parse', 'convert'] as const) {
       expect(buildRequest(raw(op, { ruleset: 'previous', targetFormat: 'ubl' })).headers).toBeUndefined();

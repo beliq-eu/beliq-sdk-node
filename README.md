@@ -195,9 +195,9 @@ const result = await beliq.validate(xml, { ruleset: 'previous' });
 console.log(result.rulesetChannel, result.rulesetFellBack, result.rulesetArtifacts);
 ```
 
-The result says what applied. `rulesetChannel` and `rulesetFellBack` say which channel: `rulesetFellBack: true` means the format had nothing for `previous` to reach, so the latest rules ran. `rulesetArtifacts` and the per-format version fields, such as `schematronVersion`, say which rules ran, and `rulesetSunsetsOn` says until when a retained ruleset is served. `GET /v1/rulesets` gives each format's `previousChannel`: what `previous` reaches for it today.
+The result says what applied. `rulesetChannel` and `rulesetFellBack` say which channel: `rulesetFellBack: true` means the format had nothing for `previous` to reach, so the latest rules ran. Under exact pins `rulesetChannel` reads `latest`, whatever version a pin ran. `rulesetArtifacts` and the per-format version fields, such as `schematronVersion`, say which rules ran, and `rulesetSunsetsOn` says until when a retained ruleset is served. `GET /v1/rulesets` gives each format's `previousChannel`: what `previous` reaches for it today.
 
-A malformed value is a 400 `VALIDATION_ERROR` before any quota is used. A pin to a version the API no longer serves is a 422 `VALIDATION_ERROR`, and that request uses up a document. The API's `Beliq-Ruleset-Resolved` response header is not returned: it is built from the request, so for pins it repeats the pins sent even when a pinned artifact did not run. `rulesetArtifacts` says what ran.
+The API answers a malformed value with a 400 `VALIDATION_ERROR` before any quota is used. It answers a pin to a version it no longer serves with a 422 `VALIDATION_ERROR`, and that request uses up a document. The API's `Beliq-Ruleset-Resolved` response header is not returned: it is built from the request, so for pins it repeats the pins sent even when a pinned artifact did not run. `rulesetArtifacts` says what ran.
 
 ### Curated option lists
 

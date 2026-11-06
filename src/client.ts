@@ -113,10 +113,11 @@ export interface ValidateOptions extends DocumentOptions {
    *
    * The result says what applied: `rulesetChannel` and `rulesetFellBack` which
    * channel, `rulesetArtifacts` and the per-format version fields which rules
-   * ran, and `rulesetSunsetsOn` until when a retained ruleset is served. A
-   * malformed value is a 400 `VALIDATION_ERROR` before any quota is used; a pin
-   * to a version the API no longer serves is a 422 `VALIDATION_ERROR`, and that
-   * request uses up a document.
+   * ran, and `rulesetSunsetsOn` until when a retained ruleset is served. Under
+   * exact pins `rulesetChannel` reads `latest`, whatever version a pin ran.
+   * The API answers a malformed value with a 400 `VALIDATION_ERROR` before any
+   * quota is used, and a pin to a version it no longer serves with a 422
+   * `VALIDATION_ERROR`, which uses up a document.
    */
   ruleset?: RulesetChannel | (string & {});
 }

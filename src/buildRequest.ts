@@ -128,7 +128,8 @@ export function buildRequest(params: BuildParams): BuiltRequest {
         contentType: params.rawContentType ?? 'application/xml',
         // No header unless the caller chose one: without it the API runs the
         // organisation's default channel, which a sent `latest` would override.
-        ...(params.ruleset !== undefined ? { headers: { 'Beliq-Ruleset': params.ruleset } } : {}),
+        // `!= null`: a plain-JS caller's null means unset too, not the string "null".
+        ...(params.ruleset != null ? { headers: { 'Beliq-Ruleset': params.ruleset } } : {}),
         outputKind: 'json',
       };
     }
