@@ -286,7 +286,10 @@ describe('retry classes', () => {
     const database = vi.fn(() =>
       Promise.resolve(errorResponse(503, 'DATABASE_UNAVAILABLE', { 'retry-after': '0' })),
     );
-    await expect(client(database as unknown as typeof fetch, { maxRetries: 2 }).me()).rejects.toMatchObject({
+    // A short budget, so a client that ignored the cap would fail here in seconds.
+    await expect(
+      client(database as unknown as typeof fetch, { maxRetries: 2, retryBudgetMs: 2_000 }).me(),
+    ).rejects.toMatchObject({
       code: 'DATABASE_UNAVAILABLE',
     });
     expect(database).toHaveBeenCalledTimes(3);
