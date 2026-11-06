@@ -172,6 +172,7 @@ export interface components {
                 startDate?: string;
                 endDate?: string;
             };
+            /** @description Lines nested under this line, at most 64 levels deep with the top-level line as level 1. The 64 is Beliq's own limit, not a format rule. A deeper tree is refused with 422 `VALIDATION_ERROR` before the body is checked against this schema, and no quota unit is spent. */
             subLines?: components["schemas"]["InvoiceLine"][];
         };
     };
@@ -499,6 +500,7 @@ export interface operations {
                                 startDate?: string;
                                 endDate?: string;
                             };
+                            /** @description Lines nested under this line, at most 64 levels deep with the top-level line as level 1. The 64 is Beliq's own limit, not a format rule. A deeper tree is refused with 422 `VALIDATION_ERROR` before the body is checked against this schema, and no quota unit is spent. */
                             subLines?: components["schemas"]["InvoiceLine"][];
                         }[];
                         taxSummary?: {
