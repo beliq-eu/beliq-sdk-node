@@ -9,13 +9,7 @@ import {
   type DocumentInput,
   type PlainObject,
 } from './internal';
-import {
-  BACKOFF_BASE_MS,
-  BACKOFF_CEILING_MS,
-  send,
-  type ResolvedConfig,
-  type RawResponse,
-} from './transport';
+import { send, type ResolvedConfig, type RawResponse } from './transport';
 import type {
   AccountInfo,
   ConvertSourceFormat,
@@ -275,8 +269,6 @@ export class Beliq {
       timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       maxRetries: options.maxRetries,
       retryBudgetMs: options.retryBudgetMs ?? DEFAULT_RETRY_BUDGET_MS,
-      backoffBaseMs: BACKOFF_BASE_MS,
-      backoffCeilingMs: BACKOFF_CEILING_MS,
     };
   }
 

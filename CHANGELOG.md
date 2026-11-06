@@ -7,14 +7,15 @@ that reason, and a minor is reserved for a change that needs consumers to opt in
 ## 0.7.0 - 2026-11-06
 
 A minor, because a call that meets an outage can now take up to 15 minutes to
-return, where 0.6 gave up after 3 retries, and a `^0.6.0` range does not reach
-a minor.
+return, plus the last attempt's deadline, where 0.6 gave up after 3 retries,
+and a `^0.6.0` range does not reach a minor.
 
 - The client retries an outage by a time budget, the new option
   `retryBudgetMs`, default `DEFAULT_RETRY_BUDGET_MS` (900000, 15 minutes from
   the start of the first attempt). It covers a `503` `DATABASE_UNAVAILABLE`, a
   `502` or `503` with no beliq error code, and a connection that could not be
-  opened (`ECONNREFUSED`, `ENOTFOUND`, `EAI_AGAIN`, `UND_ERR_CONNECT_TIMEOUT`).
+  opened (`ECONNREFUSED`, `ENOTFOUND`, `EAI_AGAIN`, `ENETUNREACH`,
+  `EHOSTUNREACH`, `UND_ERR_CONNECT_TIMEOUT`).
   0.6 retried each of them 3 times, about 2 minutes at `Retry-After: 30`. No
   attempt starts after the budget.
 - Every wait follows the server's `Retry-After` in full. 0.6 cut the header to
@@ -25,8 +26,8 @@ a minor.
 - `maxRetries` keeps its default of 3 for everything else that is retried: a
   `429` `RATE_LIMITED` or `ACCOUNT_THROTTLED`, a `503` `ENGINE_UNAVAILABLE` and
   any other `502` or `503` with a beliq error code, and any other thrown error.
-  When you set `maxRetries`, it bounds every retry, the budget's included, so
-  `maxRetries: 0` still turns retrying off.
+  When you set `maxRetries`, `DEFAULT_MAX_RETRIES` included, it bounds every
+  retry, the budget's included, so `maxRetries: 0` still turns retrying off.
 - The README and the option comments no longer say that a retry never costs a
   second quota unit. A `DATABASE_UNAVAILABLE` after the charge is refunded only
   when the database lets it, a test key's units are never refunded, and a

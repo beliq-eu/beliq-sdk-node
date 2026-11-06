@@ -17,9 +17,13 @@ export interface ResolvedConfig {
   maxRetries?: number;
   /** Time from the start of the first attempt after which no attempt starts. */
   retryBudgetMs: number;
-  /** Backoff when no `Retry-After` is given: the base doubles per attempt, and no wait reaches the ceiling. */
-  backoffBaseMs: number;
-  backoffCeilingMs: number;
+  /**
+   * Backoff when no `Retry-After` is given: the base doubles per attempt, and no
+   * wait reaches the ceiling. Unset, `BACKOFF_BASE_MS` and `BACKOFF_CEILING_MS`;
+   * a test sets smaller ones.
+   */
+  backoffBaseMs?: number;
+  backoffCeilingMs?: number;
 }
 
 export interface RawResponse {
@@ -43,11 +47,20 @@ const DATABASE_UNAVAILABLE_CODE = 'DATABASE_UNAVAILABLE';
 
 /**
  * `cause.code` values of a fetch that failed before the request left this host:
- * nothing reached the server, so nothing ran or was charged. Every other thrown
- * error, `ECONNRESET` and `UND_ERR_SOCKET` included, can happen after the request
- * was sent, so it is retried by count only.
+ * nothing reached the server, so nothing ran or was charged. `ENETUNREACH` (no
+ * route) and `EHOSTUNREACH` (the host does not answer) were measured from a
+ * connect. Every other thrown error, `ECONNRESET` and `UND_ERR_SOCKET` included,
+ * can happen after the request was sent, so it is retried by count only. So is
+ * a TLS failure, whose certificate code is not on the list: no wait fixes it.
  */
-const BEFORE_SEND_CODES = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'UND_ERR_CONNECT_TIMEOUT']);
+const BEFORE_SEND_CODES = new Set([
+  'ECONNREFUSED',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'ENETUNREACH',
+  'EHOSTUNREACH',
+  'UND_ERR_CONNECT_TIMEOUT',
+]);
 
 /**
  * How a failure is retried.
@@ -82,10 +95,10 @@ function classifyThrown(err: unknown): RetryClass {
 }
 
 /** Base for exponential backoff when no `Retry-After` is given. */
-export const BACKOFF_BASE_MS = 500;
+const BACKOFF_BASE_MS = 500;
 
 /** No backoff wait reaches this, however many attempts came before. */
-export const BACKOFF_CEILING_MS = 30_000;
+const BACKOFF_CEILING_MS = 30_000;
 
 /** Spread added to a server-supplied `Retry-After`. */
 const RETRY_AFTER_JITTER_MS = 250;
@@ -126,7 +139,9 @@ function retryDelayMs(
       return seconds * 1000 + Math.random() * RETRY_AFTER_JITTER_MS;
     }
   }
-  const backoff = Math.min(config.backoffBaseMs * 2 ** attempt, config.backoffCeilingMs / 2);
+  const base = config.backoffBaseMs ?? BACKOFF_BASE_MS;
+  const ceiling = config.backoffCeilingMs ?? BACKOFF_CEILING_MS;
+  const backoff = Math.min(base * 2 ** attempt, ceiling / 2);
   return backoff + Math.random() * backoff;
 }
 
@@ -155,7 +170,6 @@ export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<R
   const url = buildUrl(config.baseUrl, req.path, req.query);
 
   const started = performance.now();
-  let retries = 0;
   let countedRetries = 0;
   for (let attempt = 0; ; attempt++) {
     // A fresh controller per attempt: an aborted signal stays aborted, so
@@ -199,15 +213,15 @@ export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<R
     }
 
     if (retryClass === undefined) throw failure;
+    // `attempt` is also the number of retries so far.
     if (config.maxRetries !== undefined) {
-      if (retries >= config.maxRetries) throw failure;
+      if (attempt >= config.maxRetries) throw failure;
     } else if (retryClass === 'count' && countedRetries >= DEFAULT_MAX_RETRIES) {
       throw failure;
     }
     const delay = retryDelayMs(res, attempt, config);
     if (performance.now() - started + delay > config.retryBudgetMs) throw failure;
 
-    retries++;
     if (retryClass === 'count') countedRetries++;
     await sleep(delay);
   }

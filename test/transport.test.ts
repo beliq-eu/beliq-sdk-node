@@ -237,7 +237,7 @@ describe('retry classes', () => {
     // No Retry-After, so the waits are the backoff's: fake timers run them.
     vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
     try {
-      for (const code of ['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'UND_ERR_CONNECT_TIMEOUT']) {
+      for (const code of ['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'ENETUNREACH', 'EHOSTUNREACH', 'UND_ERR_CONNECT_TIMEOUT']) {
         const fetchImpl = failingThenOk(PAST_THE_COUNT, () => Promise.reject(fetchFailed(code)));
 
         const call = defaults(fetchImpl as unknown as typeof fetch).me();
@@ -274,7 +274,12 @@ describe('retry classes', () => {
   it('retries a connection lost after the send by the count only, and throws it as it came', async () => {
     // ECONNRESET and a socket closed mid-body happen on both sides of the send,
     // and whatever a caller's own fetch throws carries no cause code at all.
-    for (const thrown of [fetchFailed('ECONNRESET'), fetchFailed('UND_ERR_SOCKET'), new Error('custom fetch broke')]) {
+    for (const thrown of [
+      fetchFailed('ECONNRESET'),
+      fetchFailed('UND_ERR_SOCKET'),
+      fetchFailed('UNABLE_TO_VERIFY_LEAF_SIGNATURE'),
+      new Error('custom fetch broke'),
+    ]) {
       const fetchImpl = vi.fn(() => Promise.reject(thrown));
 
       await expect(defaults(fetchImpl as unknown as typeof fetch).me()).rejects.toBe(thrown);

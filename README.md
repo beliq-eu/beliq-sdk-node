@@ -94,9 +94,13 @@ new Beliq({
   apiKey: 'blq_live_...',
   timeoutMs: 90_000,       // per-attempt deadline (default)
   retryBudgetMs: 900_000,  // how long to keep retrying an outage: 15 minutes (default)
-  maxRetries: 3,           // retries of the failures retried by count (default)
 });
 ```
+
+Leave `maxRetries` unset unless you want to bound every retry: unset, it allows 3
+retries of the failures retried by count and leaves the budget's failures to the
+budget, while any number you pass, `DEFAULT_MAX_RETRIES` included, bounds them
+all.
 
 The defaults are exported as `DEFAULT_TIMEOUT_MS`, `DEFAULT_RETRY_BUDGET_MS` and
 `DEFAULT_MAX_RETRIES`, so you can derive from them instead of repeating the
@@ -106,7 +110,7 @@ numbers.
 |---|---|
 | `503` `DATABASE_UNAVAILABLE` | until the budget is spent |
 | `502` or `503` with no beliq error code, which a proxy in front of the API sends | until the budget is spent |
-| A connection that could not be opened: a `cause.code` of `ECONNREFUSED`, `ENOTFOUND`, `EAI_AGAIN` or `UND_ERR_CONNECT_TIMEOUT` | until the budget is spent |
+| A connection that could not be opened: a `cause.code` of `ECONNREFUSED`, `ENOTFOUND`, `EAI_AGAIN`, `ENETUNREACH`, `EHOSTUNREACH` or `UND_ERR_CONNECT_TIMEOUT` | until the budget is spent |
 | `429` `RATE_LIMITED` or `ACCOUNT_THROTTLED` | up to `maxRetries` times |
 | `503` `ENGINE_UNAVAILABLE`, and any other `502` or `503` with a beliq error code | up to `maxRetries` times |
 | Any other thrown error, such as a connection lost after the request was sent | up to `maxRetries` times |
@@ -117,12 +121,13 @@ jitter. Without one, the client backs off exponentially from 500 ms with jitter,
 and no wait reaches 30 s. No attempt starts after the budget, so a `Retry-After`
 longer than the time left ends the call at once with that error, and an outage
 longer than the budget ends it with the last error. A call that meets an outage
-can therefore take up to 15 minutes to return. Where your code cannot wait that
-long, such as inside a request with a time limit of its own, pass a shorter
-`retryBudgetMs`. The 15 minutes are beliq's own choice, not a standard's: they
+can therefore take up to 15 minutes to return, plus the last attempt's own
+deadline of up to `timeoutMs`. A host name that does not resolve counts as an
+outage too, so a misspelt `baseUrl` takes the whole budget to fail. Where your
+code cannot wait that long, such as inside a request with a time limit of its
+own, pass a shorter `retryBudgetMs`. The 15 minutes are beliq's own choice, not a standard's: they
 outlast the database outages beliq has measured, of about 9 and 12 minutes.
 
-When you set `maxRetries`, it bounds every retry, the budget's included.
 `maxRetries: 0` turns retrying off, and so does `retryBudgetMs: 0`.
 
 What a retry costs:
