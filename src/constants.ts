@@ -14,8 +14,21 @@ export const DEFAULT_BASE_URL = 'https://api.beliq.eu';
  */
 export const DEFAULT_TIMEOUT_MS = 90_000;
 
-/** Extra attempts after the first, for 429 / 502 / 503 only. */
+/**
+ * Extra attempts after the first for the failures retried by count: a 429 other
+ * than `QUOTA_EXCEEDED`, a 502 or 503 carrying a beliq error code other than
+ * `DATABASE_UNAVAILABLE`, and a connection lost after the request was sent.
+ */
 export const DEFAULT_MAX_RETRIES = 3;
+
+/**
+ * How long the client keeps retrying, from the start of the first attempt: 15
+ * minutes. A 503 `DATABASE_UNAVAILABLE`, a 502 or 503 with no beliq error code,
+ * and a connection that could not be opened are retried until it is spent. No
+ * standard sets the value: it is sized to outlast the database outages beliq
+ * has measured, of about 9 and 12 minutes.
+ */
+export const DEFAULT_RETRY_BUDGET_MS = 900_000;
 
 /**
  * Every `standard` POST /v1/generate accepts, in the order its enum lists them.

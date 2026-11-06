@@ -1,4 +1,5 @@
 import type { BuiltRequest } from './buildRequest';
+import { DEFAULT_MAX_RETRIES } from './constants';
 import { errorFromResponse, BeliqApiError } from './errors';
 
 export interface ResolvedConfig {
@@ -8,8 +9,17 @@ export interface ResolvedConfig {
   fetchImpl: typeof fetch;
   /** Per-attempt deadline in ms. 0 disables. */
   timeoutMs: number;
-  /** Extra attempts after the first. 0 disables retrying. */
-  maxRetries: number;
+  /**
+   * The caller's `maxRetries`, undefined when it set none. Unset, only the
+   * failures retried by count are bounded, by `DEFAULT_MAX_RETRIES`; set, it
+   * bounds every retry.
+   */
+  maxRetries?: number;
+  /** Time from the start of the first attempt after which no attempt starts. */
+  retryBudgetMs: number;
+  /** Backoff when no `Retry-After` is given: the base doubles per attempt, and no wait reaches the ceiling. */
+  backoffBaseMs: number;
+  backoffCeilingMs: number;
 }
 
 export interface RawResponse {
@@ -19,39 +29,66 @@ export interface RawResponse {
 }
 
 /**
- * Statuses worth another attempt.
- *
- * 429 and 503 both arrive with `Retry-After`, and beliq refunds the document's
- * quota unit on a 503, so retrying one costs nothing. 502 means the request never
- * reached the API.
- *
- * 504 is deliberately excluded. It means the work may still be running
- * server-side, so a retry can duplicate a document rather than recover one. Same
- * reasoning beliq itself applies between its API and engine tiers.
- */
-const RETRYABLE_STATUSES = new Set([429, 502, 503]);
-
-/**
  * The one 429 waiting cannot clear. `RATE_LIMITED` frees up in seconds and
  * `ACCOUNT_THROTTLED` in minutes, but a spent monthly allowance only returns when
  * the billing window turns, and beliq says so honestly: its `Retry-After` on this
- * code is the seconds remaining in the window, which can be weeks. Retrying spends
- * `maxRetries` sleeps of `MAX_RETRY_AFTER_MS` each against a refusal that is
- * already final, and whatever wraps the call usually times out first, so the caller
- * is told the request hung rather than that the quota is gone.
+ * code is the seconds remaining in the window, which can be weeks. Retrying it
+ * waits against a refusal that is already final, so the caller is told the
+ * request hung rather than that the quota is gone.
  */
 const QUOTA_EXHAUSTED_CODE = 'QUOTA_EXCEEDED';
 
-function isRetryable(status: number, code?: string): boolean {
-  if (!RETRYABLE_STATUSES.has(status)) return false;
-  return !(status === 429 && code === QUOTA_EXHAUSTED_CODE);
+/** The API's answer while its database is out; the outage it reports outlasts a few quick retries. */
+const DATABASE_UNAVAILABLE_CODE = 'DATABASE_UNAVAILABLE';
+
+/**
+ * `cause.code` values of a fetch that failed before the request left this host:
+ * nothing reached the server, so nothing ran or was charged. Every other thrown
+ * error, `ECONNRESET` and `UND_ERR_SOCKET` included, can happen after the request
+ * was sent, so it is retried by count only.
+ */
+const BEFORE_SEND_CODES = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'UND_ERR_CONNECT_TIMEOUT']);
+
+/**
+ * How a failure is retried.
+ *
+ * `budget`: an outage a wait can outlast, retried until the time budget is spent.
+ * A 503 `DATABASE_UNAVAILABLE`, a 502 or 503 with no beliq error code (the edge
+ * answered, or the pod that held the connection is gone), and a connection that
+ * could not be opened.
+ *
+ * `count`: retried up to `maxRetries` times. A 429 other than `QUOTA_EXCEEDED`,
+ * since each one counts toward the account's throttle; a 502 or 503 with any
+ * other beliq code, `ENGINE_UNAVAILABLE` included, since an engine timeout
+ * answers that code too and a budget would run the same slow document dozens of
+ * times; and a thrown error that may have come after the request was sent.
+ *
+ * Anything else is not retried. A 504 and this client's own timeout mean the
+ * work may still be running on beliq's side, so a retry can produce a second
+ * document rather than recover the first.
+ */
+type RetryClass = 'budget' | 'count';
+
+function classifyStatus(status: number, code?: string): RetryClass | undefined {
+  if (status === 429) return code === QUOTA_EXHAUSTED_CODE ? undefined : 'count';
+  if (status !== 502 && status !== 503) return undefined;
+  if (!code) return 'budget';
+  return status === 503 && code === DATABASE_UNAVAILABLE_CODE ? 'budget' : 'count';
 }
 
-/** Ceiling on a server-supplied `Retry-After`, so one header cannot hang a call for minutes. */
-const MAX_RETRY_AFTER_MS = 30_000;
+function classifyThrown(err: unknown): RetryClass {
+  const code = (err as { cause?: { code?: unknown } } | undefined)?.cause?.code;
+  return typeof code === 'string' && BEFORE_SEND_CODES.has(code) ? 'budget' : 'count';
+}
 
 /** Base for exponential backoff when no `Retry-After` is given. */
-const BACKOFF_BASE_MS = 500;
+export const BACKOFF_BASE_MS = 500;
+
+/** No backoff wait reaches this, however many attempts came before. */
+export const BACKOFF_CEILING_MS = 30_000;
+
+/** Spread added to a server-supplied `Retry-After`. */
+const RETRY_AFTER_JITTER_MS = 250;
 
 function authHeaders(config: ResolvedConfig): Record<string, string> {
   return config.auth === 'bearer'
@@ -71,19 +108,25 @@ function buildUrl(baseUrl: string, path: string, query?: BuiltRequest['query']):
 }
 
 /**
- * Delay before the next attempt: the server's `Retry-After` when it sent one,
- * otherwise exponential backoff. Jittered either way so a fleet of clients that
- * were throttled together does not return in lockstep.
+ * Delay before the next attempt: the server's `Retry-After` in full when it sent
+ * one, otherwise exponential backoff. Jittered either way so a fleet of clients
+ * that failed together does not return in lockstep. The backoff is held to half
+ * the ceiling before its jitter of up to 100%, so no wait reaches the ceiling and
+ * clients at the cap still spread out.
  */
-function retryDelayMs(res: Response | undefined, attempt: number): number {
+function retryDelayMs(
+  res: Response | undefined,
+  attempt: number,
+  config: Pick<ResolvedConfig, 'backoffBaseMs' | 'backoffCeilingMs'>,
+): number {
   const header = res?.headers.get('retry-after');
   if (header) {
     const seconds = Number(header);
     if (Number.isFinite(seconds) && seconds >= 0) {
-      return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS) + Math.random() * 250;
+      return seconds * 1000 + Math.random() * RETRY_AFTER_JITTER_MS;
     }
   }
-  const backoff = BACKOFF_BASE_MS * 2 ** attempt;
+  const backoff = Math.min(config.backoffBaseMs * 2 ** attempt, config.backoffCeilingMs / 2);
   return backoff + Math.random() * backoff;
 }
 
@@ -94,10 +137,13 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * non-2xx status (the body is parsed for the `{ success:false, error }`
  * envelope). The caller interprets a 2xx body per the request's outputKind.
  *
- * Retries transient failures automatically, honouring `Retry-After`. A document
- * request can legitimately take tens of seconds, because beliq runs the full
- * Schematron rule set over it, so the per-attempt deadline is generous by
- * default: it exists to stop a call hanging forever, not to bound normal work.
+ * Retries transient failures automatically (see RetryClass), honouring
+ * `Retry-After` in full. No attempt starts after `retryBudgetMs`, so a
+ * `Retry-After` longer than the budget left ends the call at once with the error
+ * that carried it. A document request can legitimately take tens of seconds,
+ * because beliq runs the full Schematron rule set over it, so the per-attempt
+ * deadline is generous by default: it exists to stop a call hanging forever, not
+ * to bound normal work.
  */
 export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<RawResponse> {
   const headers: Record<string, string> = { ...authHeaders(config) };
@@ -108,8 +154,10 @@ export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<R
     req.jsonBody !== undefined ? JSON.stringify(req.jsonBody) : req.rawBody;
   const url = buildUrl(config.baseUrl, req.path, req.query);
 
-  let lastError: unknown;
-  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+  const started = performance.now();
+  let retries = 0;
+  let countedRetries = 0;
+  for (let attempt = 0; ; attempt++) {
     // A fresh controller per attempt: an aborted signal stays aborted, so
     // reusing one would fail every retry instantly.
     const controller = new AbortController();
@@ -119,6 +167,8 @@ export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<R
         : undefined;
 
     let res: Response | undefined;
+    let failure: unknown;
+    let retryClass: RetryClass | undefined;
     try {
       res = await config.fetchImpl(url, {
         method: req.method,
@@ -131,12 +181,9 @@ export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<R
       if (res.ok) return { status: res.status, headers: res.headers, bytes };
 
       const apiError = errorFromResponse(res.status, bytes);
-      lastError = apiError;
-      if (!isRetryable(apiError.status, apiError.code) || attempt === config.maxRetries) {
-        throw apiError;
-      }
+      failure = apiError;
+      retryClass = classifyStatus(apiError.status, apiError.code);
     } catch (err) {
-      if (err instanceof BeliqApiError && !isRetryable(err.status, err.code)) throw err;
       // An abort is this client's own deadline, not a server fault: the request
       // may have been received and be running, so retrying risks a duplicate.
       if (controller.signal.aborted) {
@@ -145,15 +192,23 @@ export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<R
           { status: 0, code: 'TIMEOUT' },
         );
       }
-      lastError = err;
-      if (attempt === config.maxRetries) throw err;
+      failure = err;
+      retryClass = classifyThrown(err);
     } finally {
       if (timer) clearTimeout(timer);
     }
 
-    await sleep(retryDelayMs(res, attempt));
-  }
+    if (retryClass === undefined) throw failure;
+    if (config.maxRetries !== undefined) {
+      if (retries >= config.maxRetries) throw failure;
+    } else if (retryClass === 'count' && countedRetries >= DEFAULT_MAX_RETRIES) {
+      throw failure;
+    }
+    const delay = retryDelayMs(res, attempt, config);
+    if (performance.now() - started + delay > config.retryBudgetMs) throw failure;
 
-  // Unreachable: the loop either returns or throws on its final attempt.
-  throw lastError;
+    retries++;
+    if (retryClass === 'count') countedRetries++;
+    await sleep(delay);
+  }
 }
