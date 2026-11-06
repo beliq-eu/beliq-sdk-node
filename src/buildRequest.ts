@@ -37,6 +37,8 @@ export interface BuildParams {
   // validate
   validateFormat?: string;
   franceCtc?: boolean;
+  /** Sent as the `Beliq-Ruleset` header, as given; unset sends no header. */
+  ruleset?: string;
 
   // parse
   parseFormat?: string;
@@ -63,6 +65,8 @@ export interface BuiltRequest {
   contentType?: string;
   /** Accept header; set when the caller wants a JSON envelope from an otherwise-binary op. */
   accept?: string;
+  /** Further request headers, such as `Beliq-Ruleset` on validate. */
+  headers?: Record<string, string>;
   outputKind: OutputKind;
 }
 
@@ -122,6 +126,10 @@ export function buildRequest(params: BuildParams): BuiltRequest {
         query: withAdvancedQuery(query, params.advanced),
         rawBody: params.rawBody,
         contentType: params.rawContentType ?? 'application/xml',
+        // No header unless the caller chose one: without it the API runs the
+        // organisation's default channel, which a sent `latest` would override.
+        // `!= null`: a plain-JS caller's null means unset too, not the string "null".
+        ...(params.ruleset != null ? { headers: { 'Beliq-Ruleset': params.ruleset } } : {}),
         outputKind: 'json',
       };
     }

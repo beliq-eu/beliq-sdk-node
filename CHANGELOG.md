@@ -4,6 +4,16 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.7.1 - 2026-11-06
+
+- `validate` takes a `ruleset` option, sent as the `Beliq-Ruleset` header: a
+  channel (`latest` or `previous`) or comma-separated `<artifactKey>:<version>`
+  pins. Unset, no header is sent, as before, so an organisation's default
+  channel still applies. The new `RulesetChannel` type is the channel names the
+  API reports in `rulesetChannel`.
+- `BuiltRequest` from `@beliq/sdk/helpers` has an optional `headers` field, and
+  `BuildParams` an optional `ruleset`.
+
 ## 0.7.0 - 2026-11-06
 
 A minor, because a call that meets an outage can now take up to 15 minutes to

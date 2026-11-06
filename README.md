@@ -186,6 +186,19 @@ const ok = createHash('sha256').update(doc.bytes).digest('hex') === doc.sha256;
 console.log(doc.validationResult?.valid, doc.meta.rulesetSha256, ok);
 ```
 
+### Choosing the ruleset
+
+`validate` checks a document against the latest rules unless you choose otherwise. `ruleset` chooses: `'previous'` runs the retained rules before the latest, where the format has any, and comma-separated `<artifactKey>:<version>` pins run exact versions, with the keys and versions `GET /v1/rulesets` lists. The SDK sends the value as given, in the `Beliq-Ruleset` header. Left unset, it sends no header, and the API runs your organisation's default channel, which is `latest` unless your organisation chose `previous` in the dashboard.
+
+```ts
+const result = await beliq.validate(xml, { ruleset: 'previous' });
+console.log(result.rulesetChannel, result.rulesetFellBack, result.rulesetArtifacts);
+```
+
+The result says what applied. `rulesetChannel` and `rulesetFellBack` say which channel: `rulesetFellBack: true` means the format had nothing for `previous` to reach, so the latest rules ran. Under exact pins `rulesetChannel` reads `latest`, whatever version a pin ran. `rulesetArtifacts` and the per-format version fields, such as `schematronVersion`, say which rules ran, and `rulesetSunsetsOn` says until when a retained ruleset is served. `GET /v1/rulesets` gives each format's `previousChannel`: what `previous` reaches for it today.
+
+The API answers a malformed value with a 400 `VALIDATION_ERROR` before any quota is used. It answers a pin to a version it no longer serves with a 422 `VALIDATION_ERROR`, and that request uses up a document. The API's `Beliq-Ruleset-Resolved` response header is not returned: it is built from the request, so for pins it repeats the pins sent even when a pinned artifact did not run. `rulesetArtifacts` says what ran.
+
 ### Curated option lists
 
 `LIVE_GENERATE_PRESETS` is the set of public generate targets beliq.eu itself offers, each mapping to the API `standard` (plus `profile`/`facturxProfile`) it needs. NLCIUS is a Peppol BIS profile and lives here rather than in `LIVE_GENERATE_STANDARDS`. Connectors build their dropdowns from these lists.

@@ -48,6 +48,9 @@ export type ParseWarningCode = ParseWarning['code'];
 /** The JSON-mode generate envelope (Accept: application/json): the seal. */
 export type GenerateResponse = Json200Data<'generateInvoice'>;
 
+/** A ruleset channel: what `rulesetChannel` reports and `Beliq-Ruleset` accepts by name. */
+export type RulesetChannel = NonNullable<ValidationResult['rulesetChannel']>;
+
 /** One row of the ruleset fingerprint (key, version, file hash). */
 export type RulesetArtifact = NonNullable<ValidationResult['rulesetArtifacts']>[number];
 

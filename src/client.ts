@@ -21,6 +21,7 @@ import type {
   ParseFormat,
   ParseResult,
   RulesetArtifact,
+  RulesetChannel,
   Standard,
   ValidateFormat,
   ValidationResult,
@@ -103,6 +104,22 @@ export interface DocumentOptions {
 export interface ValidateOptions extends DocumentOptions {
   format?: ValidateFormat;
   franceCtc?: boolean;
+  /**
+   * The rules to validate against, sent as the `Beliq-Ruleset` header: a channel
+   * (`latest` or `previous`), or comma-separated exact pins as
+   * `<artifactKey>:<version>`, the keys and versions `GET /v1/rulesets` lists.
+   * Left unset, no header is sent, and the API runs the key's organisation
+   * default, which is `latest` unless the organisation chose `previous`.
+   *
+   * The result says what applied: `rulesetChannel` and `rulesetFellBack` which
+   * channel, `rulesetArtifacts` and the per-format version fields which rules
+   * ran, and `rulesetSunsetsOn` until when a retained ruleset is served. Under
+   * exact pins `rulesetChannel` reads `latest`, whatever version a pin ran.
+   * The API answers a malformed value with a 400 `VALIDATION_ERROR` before any
+   * quota is used, and a pin to a version it no longer serves with a 422
+   * `VALIDATION_ERROR`, which uses up a document.
+   */
+  ruleset?: RulesetChannel | (string & {});
 }
 
 export interface ParseOptions extends DocumentOptions {
@@ -322,6 +339,7 @@ export class Beliq {
       ...this.#rawParams(document, options),
       validateFormat: options.format,
       franceCtc: options.franceCtc,
+      ruleset: options.ruleset,
     });
   }
 

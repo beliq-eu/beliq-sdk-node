@@ -167,7 +167,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * to bound normal work.
  */
 export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<RawResponse> {
-  const headers: Record<string, string> = { ...authHeaders(config) };
+  const headers: Record<string, string> = { ...req.headers, ...authHeaders(config) };
   if (req.contentType) headers['Content-Type'] = req.contentType;
   if (req.accept) headers['Accept'] = req.accept;
 
