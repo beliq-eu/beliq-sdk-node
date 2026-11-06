@@ -1,6 +1,6 @@
 import { buildRequest, type BuildParams } from './buildRequest';
 import { BeliqApiError, errorFromResponse, parseEnvelope } from './errors';
-import { DEFAULT_BASE_URL, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT_MS } from './constants';
+import { DEFAULT_BASE_URL, DEFAULT_RETRY_BUDGET_MS, DEFAULT_TIMEOUT_MS } from './constants';
 import {
   sniffContentType,
   toBytes,
@@ -43,16 +43,27 @@ export interface BeliqOptions {
    * the full Schematron rule set over a document, so a generate or validate can
    * take tens of seconds legitimately. Set well above the latency you expect:
    * a deadline shorter than the server's own means giving up on work that is
-   * still running, which is the one case a retry can duplicate a document.
-   * 0 disables the deadline.
+   * still running, and this client does not retry its own timeout, since the
+   * work may have finished. 0 disables the deadline.
    */
   timeoutMs?: number;
   /**
-   * Extra attempts after the first (default 3). Retries only 429, 502 and 503,
-   * honouring `Retry-After`; beliq refunds the quota unit on a 503, so a retry
-   * costs nothing. 0 disables retrying.
+   * Extra attempts after the first for the failures retried by count (default
+   * 3): a 429 other than `QUOTA_EXCEEDED`, a 502 or 503 carrying any beliq error
+   * code but a 503 `DATABASE_UNAVAILABLE`, and any thrown error but a connection
+   * that could not be opened, such as a connection lost after the request was
+   * sent. When you set it, it bounds every retry, so 0 disables retrying.
    */
   maxRetries?: number;
+  /**
+   * How long to keep retrying, in ms from the start of the first attempt
+   * (default 900000, 15 minutes). A 503 `DATABASE_UNAVAILABLE`, a 502 or 503 with
+   * no beliq error code, and a connection that could not be opened are retried
+   * until it is spent. Every wait follows the server's `Retry-After` in full; no
+   * attempt starts after the budget, so a `Retry-After` longer than what is left
+   * ends the call at once. 0 disables retrying.
+   */
+  retryBudgetMs?: number;
 }
 
 export interface GenerateInput {
@@ -256,7 +267,8 @@ export class Beliq {
       auth: options.auth ?? 'header',
       fetchImpl,
       timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      maxRetries: options.maxRetries ?? DEFAULT_MAX_RETRIES,
+      maxRetries: options.maxRetries,
+      retryBudgetMs: options.retryBudgetMs ?? DEFAULT_RETRY_BUDGET_MS,
     };
   }
 

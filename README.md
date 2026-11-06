@@ -92,21 +92,64 @@ backoff around it.
 ```ts
 new Beliq({
   apiKey: 'blq_live_...',
-  timeoutMs: 90_000,  // per-attempt deadline (default)
-  maxRetries: 3,      // extra attempts after the first (default)
+  timeoutMs: 90_000,       // per-attempt deadline (default)
+  retryBudgetMs: 900_000,  // how long to keep retrying an outage: 15 minutes (default)
 });
 ```
 
-Both defaults are exported as `DEFAULT_TIMEOUT_MS` and `DEFAULT_MAX_RETRIES`, so
-you can derive from them instead of repeating the numbers.
+Leave `maxRetries` unset unless you want to bound every retry: unset, it allows 3
+retries of the failures retried by count and leaves the budget's failures to the
+budget, while any number you pass, `DEFAULT_MAX_RETRIES` included, bounds them
+all.
 
-Only `429`, `502` and `503` are retried, honouring the server's `Retry-After`
-with jitter. beliq refunds the document's quota unit on a `503`, so a retry never
-costs you a second document.
+The defaults are exported as `DEFAULT_TIMEOUT_MS`, `DEFAULT_RETRY_BUDGET_MS` and
+`DEFAULT_MAX_RETRIES`, so you can derive from them instead of repeating the
+numbers.
+
+| Failure | Retried |
+|---|---|
+| `503` `DATABASE_UNAVAILABLE` | until the budget is spent |
+| `502` or `503` with no beliq error code, which a proxy in front of the API sends | until the budget is spent |
+| A connection that could not be opened: a `cause.code` of `ECONNREFUSED`, `ENOTFOUND`, `EAI_AGAIN`, `ENETUNREACH`, `EHOSTUNREACH` or `UND_ERR_CONNECT_TIMEOUT` | until the budget is spent |
+| `429` `RATE_LIMITED` or `ACCOUNT_THROTTLED` | up to `maxRetries` times |
+| `503` `ENGINE_UNAVAILABLE`, and any other `502` or `503` with a beliq error code | up to `maxRetries` times |
+| Any other thrown error, such as a connection lost after the request was sent | up to `maxRetries` times |
+| `429` `QUOTA_EXCEEDED`, `504`, this client's own timeout, and every other status | never |
+
+Every wait follows the server's `Retry-After` in full, plus up to 250 ms of
+jitter. Without one, the client backs off exponentially from 500 ms with jitter,
+and no wait reaches 30 s. No attempt starts after the budget, so a `Retry-After`
+longer than the time left ends the call at once with that error, and an outage
+longer than the budget ends it with the last error. A call that meets an outage
+can therefore take up to 15 minutes to return, plus the last attempt's own
+deadline of up to `timeoutMs`. A host name that does not resolve counts as an
+outage too, so a misspelt `baseUrl` takes the whole budget to fail. Where your
+code cannot wait that long, such as inside a request with a time limit of its
+own, pass a shorter `retryBudgetMs`. The 15 minutes are beliq's own choice, not
+a standard's: they outlast two of the three database outages beliq has
+measured, of about 9 and 12 minutes. The third lasted 33 minutes, and a call
+that meets one like it ends with the last error.
+
+`maxRetries: 0` turns retrying off, and so does `retryBudgetMs: 0`.
+
+What a retry costs:
+
+- Most `DATABASE_UNAVAILABLE` answers come before any quota unit is spent, and a
+  retry of one of those costs nothing. When the request had spent a unit, beliq
+  tries to refund it at once and says on the `x-beliq-quota-refunded` header
+  whether that worked. While the database is out, the refund usually cannot be
+  applied; https://docs.beliq.eu/api-reference/errors/ says how such a unit is
+  reconciled.
+- The unit of an `ENGINE_UNAVAILABLE` is refunded, within the cap that page
+  names.
+- A test key's sandbox units are never refunded.
+- A connection lost after the request was sent can mean beliq already processed
+  it. A retry of `generate`, `validate`, `parse` or `convert` is then a second
+  request and spends a second unit.
 
 `504` and this client's own timeout are deliberately **not** retried: both mean
-the work may still be running on beliq's side, so retrying risks producing a
-second document rather than recovering the first.
+the work may still be running on beliq's side, so a retry would run it, and
+charge it, a second time.
 
 A `429` carrying `QUOTA_EXCEEDED` is not retried either. `RATE_LIMITED` and
 `ACCOUNT_THROTTLED` clear on their own, but a spent monthly allowance only returns
