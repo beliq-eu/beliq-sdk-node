@@ -125,8 +125,10 @@ can therefore take up to 15 minutes to return, plus the last attempt's own
 deadline of up to `timeoutMs`. A host name that does not resolve counts as an
 outage too, so a misspelt `baseUrl` takes the whole budget to fail. Where your
 code cannot wait that long, such as inside a request with a time limit of its
-own, pass a shorter `retryBudgetMs`. The 15 minutes are beliq's own choice, not a standard's: they
-outlast the database outages beliq has measured, of about 9 and 12 minutes.
+own, pass a shorter `retryBudgetMs`. The 15 minutes are beliq's own choice, not
+a standard's: they outlast two of the three database outages beliq has
+measured, of about 9 and 12 minutes. The third lasted 33 minutes, and a call
+that meets one like it ends with the last error.
 
 `maxRetries: 0` turns retrying off, and so does `retryBudgetMs: 0`.
 

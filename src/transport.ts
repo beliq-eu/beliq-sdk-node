@@ -1,6 +1,7 @@
 import type { BuiltRequest } from './buildRequest';
 import { DEFAULT_MAX_RETRIES } from './constants';
 import { errorFromResponse, BeliqApiError } from './errors';
+import type { ApiErrorCode } from './types';
 
 export interface ResolvedConfig {
   apiKey: string;
@@ -40,18 +41,23 @@ export interface RawResponse {
  * waits against a refusal that is already final, so the caller is told the
  * request hung rather than that the quota is gone.
  */
-const QUOTA_EXHAUSTED_CODE = 'QUOTA_EXCEEDED';
+const QUOTA_EXHAUSTED_CODE: ApiErrorCode = 'QUOTA_EXCEEDED';
 
 /** The API's answer while its database is out; the outage it reports outlasts a few quick retries. */
-const DATABASE_UNAVAILABLE_CODE = 'DATABASE_UNAVAILABLE';
+// Typed by the generated error union, so a code renamed in openapi.json fails the typecheck.
+const DATABASE_UNAVAILABLE_CODE: ApiErrorCode = 'DATABASE_UNAVAILABLE';
 
 /**
- * `cause.code` values of a fetch that failed before the request left this host:
- * nothing reached the server, so nothing ran or was charged. `ENETUNREACH` (no
- * route) and `EHOSTUNREACH` (the host does not answer) were measured from a
- * connect. Every other thrown error, `ECONNRESET` and `UND_ERR_SOCKET` included,
- * can happen after the request was sent, so it is retried by count only. So is
- * a TLS failure, whose certificate code is not on the list: no wait fixes it.
+ * `cause.code` values of a fetch that failed before the request left this host,
+ * so nothing ran or was charged. `ENETUNREACH` (no route) and `EHOSTUNREACH` (the
+ * host does not answer) were measured from a connect. On a connection already
+ * open, TCP treats both as soft errors (RFC 1122, section 4.2.3.9) and reports
+ * one only when its retransmission timeout ends, 924.6 s by Linux's default
+ * `tcp_retries2` (tcp(7)), long after the default per-attempt deadline aborts
+ * the attempt as a timeout. Every other thrown error, `ECONNRESET` and
+ * `UND_ERR_SOCKET` included, can happen after the request was sent, so it is
+ * retried by count only. So is a TLS failure, whose certificate code is not on
+ * the list: no wait fixes it.
  */
 const BEFORE_SEND_CODES = new Set([
   'ECONNREFUSED',
