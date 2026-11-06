@@ -69,6 +69,14 @@ describe('validate: the ruleset option on the wire', () => {
     });
   });
 
+  it('sends a pin list as given, without reading it', async () => {
+    const pins = 'cii_xsd:D16B, en16931_cii_schematron:1.3.16';
+    await withServer(async (baseUrl, seen) => {
+      await client(baseUrl).validate(DOCUMENT, { ruleset: pins });
+      expect(seen[0]!.headers['beliq-ruleset']).toBe(pins);
+    });
+  });
+
   it('(2) no ruleset option sends no Beliq-Ruleset header', async () => {
     await withServer(async (baseUrl, seen) => {
       await client(baseUrl).validate(DOCUMENT);

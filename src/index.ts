@@ -48,6 +48,7 @@ export type {
   GenerateBody,
   GenerateResponse,
   RulesetArtifact,
+  RulesetChannel,
   Invoice,
   Standard,
   GenerateProfile,

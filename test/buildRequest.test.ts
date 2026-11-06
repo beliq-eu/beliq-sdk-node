@@ -95,6 +95,23 @@ describe('buildRequest - validate', () => {
     expect(buildRequest(raw('validate', { validateFormat: 'auto', franceCtc: false, advanced: { franceCtc: true } })).query)
       .toEqual({ format: 'auto', franceCtc: true });
   });
+
+  it('carries ruleset as the Beliq-Ruleset header, never in the query', () => {
+    const r = buildRequest(raw('validate', { validateFormat: 'auto', ruleset: 'previous' }));
+    expect(r.headers).toEqual({ 'Beliq-Ruleset': 'previous' });
+    expect(r.query).toEqual({ format: 'auto' });
+  });
+
+  it('sets no headers when ruleset is not set', () => {
+    expect(buildRequest(raw('validate', { validateFormat: 'auto' })).headers).toBeUndefined();
+  });
+
+  it('sets no Beliq-Ruleset header on the other operations', () => {
+    for (const op of ['parse', 'convert'] as const) {
+      expect(buildRequest(raw(op, { ruleset: 'previous', targetFormat: 'ubl' })).headers).toBeUndefined();
+    }
+    expect(buildRequest(gen({ ruleset: 'previous' })).headers).toBeUndefined();
+  });
 });
 
 describe('buildRequest - parse', () => {
