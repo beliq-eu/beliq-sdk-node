@@ -660,6 +660,8 @@ export interface operations {
                     "x-ruleset-artifacts"?: string;
                     /** @description How the returned PDF was built: "hybrid" (PDF/A-3 with the XML embedded) or "visualization" (rendered pages only, no XML embedded). */
                     "x-pdf-kind"?: string;
+                    /** @description "true" when this request repeats one your organisation sent in the same mode and was charged for in the last 15 minutes: the same route, query, Content-Type, Accept, ruleset selection and body, and for generate the same stored PDF template. The request was computed again and not charged. One charge covers 10 such repeats; the 11th is charged and starts a new 15 minutes. The window, what makes two requests the same and the cap are a choice Beliq made; no standard sets them. Absent when the request was charged. */
+                    "x-beliq-idempotent-replay"?: string;
                     /** @description "true" for a live key, "false" for a test key. Test-mode documents are watermarked and do not draw on the live monthly quota. */
                     "x-beliq-livemode"?: string;
                     /** @description Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record. */
@@ -1000,6 +1002,8 @@ export interface operations {
                     "x-ruleset-artifacts"?: string;
                     /** @description The ruleset selection that actually applied. Set when the request carried a Beliq-Ruleset header, or carried none and the API key's organisation has "previous" as its default channel. Reveals a "previous"→"latest" fallback. */
                     "beliq-ruleset-resolved"?: string;
+                    /** @description "true" when this request repeats one your organisation sent in the same mode and was charged for in the last 15 minutes: the same route, query, Content-Type, Accept, ruleset selection and body, and for generate the same stored PDF template. The request was computed again and not charged. One charge covers 10 such repeats; the 11th is charged and starts a new 15 minutes. The window, what makes two requests the same and the cap are a choice Beliq made; no standard sets them. Absent when the request was charged. */
+                    "x-beliq-idempotent-replay"?: string;
                     /** @description "true" for a live key, "false" for a test key. Test-mode documents are watermarked and do not draw on the live monthly quota. */
                     "x-beliq-livemode"?: string;
                     /** @description Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record. */
@@ -1299,6 +1303,8 @@ export interface operations {
                     "x-ruleset-sha256"?: string;
                     /** @description One-line verdict, e.g. "pass · 0 err · 1 warn". */
                     "x-validation"?: string;
+                    /** @description "true" when this request repeats one your organisation sent in the same mode and was charged for in the last 15 minutes: the same route, query, Content-Type, Accept, ruleset selection and body, and for generate the same stored PDF template. The request was computed again and not charged. One charge covers 10 such repeats; the 11th is charged and starts a new 15 minutes. The window, what makes two requests the same and the cap are a choice Beliq made; no standard sets them. Absent when the request was charged. */
+                    "x-beliq-idempotent-replay"?: string;
                     /** @description "true" for a live key, "false" for a test key. Test-mode documents are watermarked and do not draw on the live monthly quota. */
                     "x-beliq-livemode"?: string;
                     /** @description Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record. */
@@ -1607,6 +1613,8 @@ export interface operations {
                     "x-output-envelope"?: string;
                     /** @description Compact JSON naming the ruleset/artifact versions pinned for the produced format. */
                     "x-version-block"?: string;
+                    /** @description "true" when this request repeats one your organisation sent in the same mode and was charged for in the last 15 minutes: the same route, query, Content-Type, Accept, ruleset selection and body, and for generate the same stored PDF template. The request was computed again and not charged. One charge covers 10 such repeats; the 11th is charged and starts a new 15 minutes. The window, what makes two requests the same and the cap are a choice Beliq made; no standard sets them. Absent when the request was charged. */
+                    "x-beliq-idempotent-replay"?: string;
                     /** @description "true" for a live key, "false" for a test key. Test-mode documents are watermarked and do not draw on the live monthly quota. */
                     "x-beliq-livemode"?: string;
                     /** @description Correlation id for this request. Quote it in a support request; it is the key the API, the engine, and error tracking all record. */
