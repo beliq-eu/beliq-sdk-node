@@ -727,6 +727,11 @@ export interface operations {
                                  * @description ISO date the retained ruleset serving this request stops being served. Present only when a retained ruleset ran (never on a default request); the earliest date when several ran. After it an exact pin 422s. It bounds the pin, not the channel: `previous` stops reaching the version on this date or on the authority's mandatory date for the successor, whichever comes first.
                                  */
                                 rulesetSunsetsOn?: string;
+                                /**
+                                 * Format: date
+                                 * @description ISO date the authority made the successor of a ruleset this request selected mandatory, when that date is on or before the day of the verdict; the earliest date when several were. Each such ruleset also adds a `RULESET_SUPERSEDED` warning naming it, its version, the successor and the date. Absent when none was. `valid` is still the verdict of the version that ran.
+                                 */
+                                rulesetSupersededOn?: string;
                                 /** @description Present only when the document sent to `POST /v1/validate` was a PDF: which embedded file the verdict is about, and that the PDF around it was not checked. */
                                 pdfInput?: {
                                     /**
@@ -1062,6 +1067,11 @@ export interface operations {
                              * @description ISO date the retained ruleset serving this request stops being served. Present only when a retained ruleset ran (never on a default request); the earliest date when several ran. After it an exact pin 422s. It bounds the pin, not the channel: `previous` stops reaching the version on this date or on the authority's mandatory date for the successor, whichever comes first.
                              */
                             rulesetSunsetsOn?: string;
+                            /**
+                             * Format: date
+                             * @description ISO date the authority made the successor of a ruleset this request selected mandatory, when that date is on or before the day of the verdict; the earliest date when several were. Each such ruleset also adds a `RULESET_SUPERSEDED` warning naming it, its version, the successor and the date. Absent when none was. `valid` is still the verdict of the version that ran.
+                             */
+                            rulesetSupersededOn?: string;
                             /** @description Present only when the document sent to `POST /v1/validate` was a PDF: which embedded file the verdict is about, and that the PDF around it was not checked. */
                             pdfInput?: {
                                 /**
