@@ -44,8 +44,8 @@ export interface BeliqOptions {
    * the full Schematron rule set over a document, so a generate or validate can
    * take tens of seconds legitimately. Set well above the latency you expect:
    * a deadline shorter than the server's own means giving up on work that is
-   * still running, and this client does not retry its own timeout, since the
-   * work may have finished. 0 disables the deadline.
+   * still running, and this client does not retry its own timeout, since a
+   * repeat runs the same document again from the start. 0 disables the deadline.
    */
   timeoutMs?: number;
   /**

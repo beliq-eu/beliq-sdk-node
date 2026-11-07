@@ -81,10 +81,13 @@ const BEFORE_SEND_CODES = new Set([
  * other beliq code, `ENGINE_UNAVAILABLE` included, since an engine timeout
  * answers that code too and a budget would run the same slow document dozens of
  * times; and a thrown error that may have come after the request was sent.
+ * beliq may have run and charged that request, but it does not charge a repeat
+ * of a charged request within 15 minutes, up to 10 repeats (beliq's own values,
+ * which no standard sets), and every attempt sends the same bytes.
  *
  * Anything else is not retried. A 504 and this client's own timeout mean the
- * work may still be running on beliq's side, so a retry can produce a second
- * document rather than recover the first.
+ * work may still be running on beliq's side, and a repeat runs the same document
+ * again from the start, likely into the same deadline.
  */
 type RetryClass = 'budget' | 'count';
 
@@ -205,7 +208,7 @@ export async function send(config: ResolvedConfig, req: BuiltRequest): Promise<R
       retryClass = classifyStatus(apiError.status, apiError.code);
     } catch (err) {
       // An abort is this client's own deadline, not a server fault: the request
-      // may have been received and be running, so retrying risks a duplicate.
+      // may still be running, and a repeat would take as long again.
       if (controller.signal.aborted) {
         throw new BeliqApiError(
           `beliq: request to ${req.path} exceeded ${config.timeoutMs}ms`,
