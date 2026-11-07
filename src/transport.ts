@@ -82,8 +82,8 @@ const BEFORE_SEND_CODES = new Set([
  * answers that code too and a budget would run the same slow document dozens of
  * times; and a thrown error that may have come after the request was sent.
  * beliq may have run and charged that request, but it does not charge a repeat
- * of a charged request within 15 minutes, up to 10 repeats, and every attempt
- * sends the same bytes.
+ * of a charged request within 15 minutes, up to 10 repeats (beliq's own values,
+ * which no standard sets), and every attempt sends the same bytes.
  *
  * Anything else is not retried. A 504 and this client's own timeout mean the
  * work may still be running on beliq's side, and a repeat runs the same document
