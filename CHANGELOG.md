@@ -4,6 +4,30 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.7.2 - 2026-11-07
+
+- `ValidationResult` has `rulesetSupersededOn`, from the API document
+  0.26.0: the ISO date the authority made the successor of a ruleset the
+  request selected mandatory, when that date is on or before the day of the
+  verdict, and the earliest such date when there are several. Each such
+  ruleset also adds a `RULESET_SUPERSEDED` warning that names it, its
+  version, the successor and the date. `valid` is still the verdict of the
+  version that ran. The field is optional, so no code needs to change.
+- The vendored `openapi.json` is document `0.26.0` of the API, up from
+  `0.24.0`. Document `0.25.0` added the `x-beliq-idempotent-replay`
+  response header on `generate`, `validate`, `parse` and `convert`, which
+  the client does not read. The generated types also carry the API's
+  description of `subLines`: at most 64 levels deep, a limit beliq set and
+  no format rule.
+- The README and the option comments say that beliq does not charge a
+  repeat of a charged `generate`, `validate`, `parse` or `convert` request
+  again within 15 minutes of the charge, up to 10 repeats, and that every
+  retry sends the same request. A `maxRetries` above 10 can be charged again,
+  and so can every attempt when beliq cannot read or write its record of
+  charged requests. They also say why a `504` and this client's
+  own timeout stay unretried: a repeat runs the same document again from
+  the start. No code changes.
+
 ## 0.7.1 - 2026-11-06
 
 - `validate` takes a `ruleset` option, sent as the `Beliq-Ruleset` header: a
