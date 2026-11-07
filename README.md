@@ -143,13 +143,18 @@ What a retry costs:
 - The unit of an `ENGINE_UNAVAILABLE` is refunded, within the cap that page
   names.
 - A test key's sandbox units are never refunded.
-- A connection lost after the request was sent can mean beliq already processed
-  it. A retry of `generate`, `validate`, `parse` or `convert` is then a second
-  request and spends a second unit.
+- A connection lost after the request was sent can mean beliq already ran the
+  request and charged it. beliq does not charge a repeat of a charged
+  `generate`, `validate`, `parse` or `convert` request again within 15 minutes
+  of the charge, up to 10 repeats, and every retry sends the same request. The
+  answer to such a repeat carries `x-beliq-idempotent-replay: true`. When beliq
+  cannot read or write its record of charged requests, it charges every attempt.
+  https://docs.beliq.eu/api-reference/errors/#repeated-requests-are-not-charged-again
+  says what makes two requests the same.
 
-`504` and this client's own timeout are deliberately **not** retried: both mean
-the work may still be running on beliq's side, so a retry would run it, and
-charge it, a second time.
+`504` and this client's own timeout are deliberately **not** retried: both can
+mean the work is still running on beliq's side, and a retry runs the same
+document again from the start, so it would likely run out of time again.
 
 A `429` carrying `QUOTA_EXCEEDED` is not retried either. `RATE_LIMITED` and
 `ACCOUNT_THROTTLED` clear on their own, but a spent monthly allowance only returns
