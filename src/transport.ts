@@ -56,7 +56,7 @@ const DATABASE_UNAVAILABLE_CODE: ApiErrorCode = 'DATABASE_UNAVAILABLE';
  * `tcp_retries2` (tcp(7)), long after the default per-attempt deadline aborts
  * the attempt as a timeout. Every other thrown error, `ECONNRESET` and
  * `UND_ERR_SOCKET` included, can happen after the request was sent, so it is
- * retried by count only, except a TLS failure (see `isTlsFailure`).
+ * retried by count only, except a certificate failure (see `isCertificateFailure`).
  */
 const BEFORE_SEND_CODES = new Set([
   'ECONNREFUSED',
@@ -104,18 +104,15 @@ const CERTIFICATE_ERROR_CODES = new Set([
 ]);
 
 /**
- * A certificate that fails verification, a certificate for another name
- * (`ERR_TLS_CERT_ALTNAME_INVALID`) or a handshake OpenSSL refused
- * (`ERR_SSL_*`, such as `ERR_SSL_WRONG_VERSION_NUMBER` from a socket that
- * answers plain HTTP). No wait fixes any of them, so they are not retried, as
- * the Python SDK raises a failed TLS handshake at once.
+ * A certificate that fails verification, or one for another name
+ * (`ERR_TLS_CERT_ALTNAME_INVALID`). Both come from the handshake, before the
+ * request is sent, and no wait fixes them, so they are not retried, as the
+ * Python SDK raises them at once. An OpenSSL error (`ERR_SSL_*`) is not among
+ * them: it can also end a connection after the request was sent, and nothing
+ * in it says which, so it stays retried by count.
  */
-function isTlsFailure(code: string): boolean {
-  return (
-    CERTIFICATE_ERROR_CODES.has(code) ||
-    code === 'ERR_TLS_CERT_ALTNAME_INVALID' ||
-    code.startsWith('ERR_SSL_')
-  );
+function isCertificateFailure(code: string): boolean {
+  return CERTIFICATE_ERROR_CODES.has(code) || code === 'ERR_TLS_CERT_ALTNAME_INVALID';
 }
 
 /**
@@ -137,7 +134,7 @@ function isTlsFailure(code: string): boolean {
  *
  * `none`: not retried. A 504 and this client's own timeout mean the work may
  * still be running on beliq's side, and a repeat runs the same document again
- * from the start, likely into the same deadline. A TLS failure, an abort and
+ * from the start, likely into the same deadline. A certificate failure and
  * every other status are final too.
  */
 export type RetryClass = 'budget' | 'count' | 'none';
@@ -150,11 +147,9 @@ function classifyStatus(status: number, code?: string): RetryClass {
 }
 
 function classifyThrown(err: unknown): RetryClass {
-  const name = (err as { name?: unknown } | undefined)?.name;
-  if (name === 'AbortError' || name === 'TimeoutError') return 'none';
   const code = (err as { cause?: { code?: unknown } } | undefined)?.cause?.code;
   if (typeof code !== 'string') return 'count';
-  if (isTlsFailure(code)) return 'none';
+  if (isCertificateFailure(code)) return 'none';
   return BEFORE_SEND_CODES.has(code) ? 'budget' : 'count';
 }
 
@@ -166,9 +161,8 @@ function classifyThrown(err: unknown): RetryClass {
  * up to `maxRetries` times, `none` not at all. It reads a `BeliqApiError` by its
  * status and code, `TIMEOUT` (this client's own deadline) as `none`, and any
  * other error by its `cause.code`, as `fetch` throws it. An abort by the
- * caller's own `signal` throws the signal's reason, which this reads as `none`
- * when it is the default `AbortError` or a `TimeoutError`; a reason of the
- * caller's own making is the caller's to recognise.
+ * caller's own `signal` throws the signal's reason, which the loop never
+ * classifies: check the signal's `aborted` before asking this.
  */
 export function retryClass(error: unknown): RetryClass {
   // By name as well as by class: an ESM and a CommonJS copy of this package in
@@ -233,10 +227,7 @@ function retryDelayMs(
 /** Wait `ms`, or reject with the signal's reason as soon as it aborts. */
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(signal.reason);
-      return;
-    }
+    signal?.throwIfAborted();
     const onAbort = () => {
       clearTimeout(timer);
       reject(signal?.reason);
@@ -281,10 +272,15 @@ export async function send(
   const started = performance.now();
   let countedRetries = 0;
   for (let attempt = 0; ; attempt++) {
-    if (signal?.aborted) throw signal.reason;
+    signal?.throwIfAborted();
     // A fresh controller per attempt: an aborted signal stays aborted, so
     // reusing one would fail every retry instantly.
     const controller = new AbortController();
+    // A listener removed after each attempt, not AbortSignal.any: some Node
+    // releases this package supports keep every signal AbortSignal.any made
+    // until its source aborts, so one long-lived caller signal would grow.
+    const onCallerAbort = () => controller.abort();
+    signal?.addEventListener('abort', onCallerAbort, { once: true });
     const timer =
       config.timeoutMs > 0
         ? setTimeout(() => controller.abort(), config.timeoutMs)
@@ -298,7 +294,7 @@ export async function send(
         method: req.method,
         headers,
         body,
-        signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal,
+        signal: controller.signal,
       });
 
       const bytes = new Uint8Array(await res.arrayBuffer());
@@ -307,7 +303,7 @@ export async function send(
       failure = errorFromResponse(res.status, bytes, res.headers);
       kind = retryClass(failure);
     } catch (err) {
-      if (signal?.aborted) throw signal.reason;
+      signal?.throwIfAborted();
       // Otherwise an abort is this client's own deadline, not a server fault:
       // the request may still be running, and a repeat would take as long again.
       if (controller.signal.aborted) {
@@ -320,6 +316,7 @@ export async function send(
       kind = retryClass(err);
     } finally {
       if (timer) clearTimeout(timer);
+      signal?.removeEventListener('abort', onCallerAbort);
     }
 
     if (kind === 'none') throw failure;

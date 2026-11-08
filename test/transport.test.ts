@@ -286,16 +286,6 @@ describe('retry classes', () => {
     }
   });
 
-  it('throws a TLS failure on the first attempt, since no wait fixes it', async () => {
-    for (const code of ['UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'ERR_TLS_CERT_ALTNAME_INVALID', 'ERR_SSL_WRONG_VERSION_NUMBER']) {
-      const thrown = fetchFailed(code);
-      const fetchImpl = vi.fn(() => Promise.reject(thrown));
-
-      await expect(defaults(fetchImpl as unknown as typeof fetch).me()).rejects.toBe(thrown);
-      expect(fetchImpl).toHaveBeenCalledTimes(1);
-    }
-  });
-
   it('caps every class when the caller sets maxRetries', async () => {
     const database = vi.fn(() =>
       Promise.resolve(errorResponse(503, 'DATABASE_UNAVAILABLE', { 'retry-after': '0' })),

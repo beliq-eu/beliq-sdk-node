@@ -12,8 +12,13 @@
  * failure and check that `retryClass` names the class those attempts show: one
  * attempt is `none`, the count's attempts are `count`, more is `budget`.
  */
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { createServer as createHttpsServer } from 'node:https';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Beliq } from '../src/client';
 import { buildRequest } from '../src/buildRequest';
@@ -159,23 +164,53 @@ describe.concurrent('retryClass agrees with the retries the client makes', () =>
     );
   });
 
-  it('a failed TLS handshake: https to a socket that answers plain HTTP', async ({ expect }) => {
+  it('an OpenSSL error: https to a socket that answers plain HTTP', async ({ expect }) => {
     // undici reports it as `fetch failed` caused by ERR_SSL_WRONG_VERSION_NUMBER,
-    // measured on Node 22.23. No wait fixes it.
+    // measured on Node 22.23. An `ERR_SSL_*` code can also end a connection
+    // after the send, and nothing in it says which, so it stays on the count.
     await withServer(answer(200, undefined), async (port) => {
       const { attempts, thrown } = await observe(`https://127.0.0.1:${port}`);
-      expect(shownClass(attempts)).toBe('none');
-      expect(retryClass(thrown)).toBe('none');
+      expect((thrown as { cause?: { code?: string } }).cause?.code).toBe('ERR_SSL_WRONG_VERSION_NUMBER');
+      expect(shownClass(attempts)).toBe('count');
+      expect(retryClass(thrown)).toBe('count');
     });
   });
 
-  // The certificate failures in the shape undici throws them, measured on Node
-  // 22.23 against a self-signed certificate (DEPTH_ZERO_SELF_SIGNED_CERT) and a
-  // certificate for another name (ERR_TLS_CERT_ALTNAME_INVALID). The other codes
-  // are from Node's list of X509 certificate error codes
+  it('a self-signed certificate, from a real HTTPS server', async ({ expect }) => {
+    const dir = mkdtempSync(join(tmpdir(), 'beliq-sdk-tls-'));
+    try {
+      const key = join(dir, 'key.pem');
+      const cert = join(dir, 'cert.pem');
+      execFileSync('openssl', [
+        'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', key, '-out', cert,
+        '-days', '1', '-subj', '/CN=localhost',
+      ], { stdio: 'ignore' });
+      const server = createHttpsServer({ key: readFileSync(key), cert: readFileSync(cert) }, (_req, res) =>
+        res.end('ok'),
+      );
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+      try {
+        const { port } = server.address() as AddressInfo;
+        const { attempts, thrown } = await observe(`https://localhost:${port}`);
+        expect((thrown as { cause?: { code?: string } }).cause?.code).toBe('DEPTH_ZERO_SELF_SIGNED_CERT');
+        expect(shownClass(attempts)).toBe('none');
+        expect(retryClass(thrown)).toBe('none');
+      } finally {
+        server.closeAllConnections();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // The other certificate failures, in the shape undici throws them: measured
+  // on Node 22.23 for a certificate for another name
+  // (ERR_TLS_CERT_ALTNAME_INVALID, which needs the certificate trusted, so a
+  // process started with NODE_EXTRA_CA_CERTS); the rest are from Node's list of
+  // X509 certificate error codes
   // (https://nodejs.org/api/tls.html#x509-certificate-error-codes).
   for (const code of [
-    'DEPTH_ZERO_SELF_SIGNED_CERT',
     'ERR_TLS_CERT_ALTNAME_INVALID',
     'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
     'CERT_HAS_EXPIRED',
@@ -193,11 +228,6 @@ describe.concurrent('retryClass agrees with the retries the client makes', () =>
 });
 
 describe('retryClass on what a caller holds', () => {
-  it('names an abort as none', () => {
-    expect(retryClass(new DOMException('This operation was aborted', 'AbortError'))).toBe('none');
-    expect(retryClass(new DOMException('The operation timed out', 'TimeoutError'))).toBe('none');
-  });
-
   it('reads a BeliqApiError by its status and code', () => {
     expect(retryClass(new BeliqApiError('x', { status: 503, code: 'DATABASE_UNAVAILABLE' }))).toBe('budget');
     expect(retryClass(new BeliqApiError('x', { status: 503, code: 'ENGINE_UNAVAILABLE' }))).toBe('count');
@@ -214,6 +244,9 @@ describe.concurrent('retryAfterSeconds', () => {
     // so the field says what the loop would have waited on.
     ['an HTTP-date', { 'retry-after': 'Wed, 21 Oct 2026 07:28:00 GMT' }, undefined],
     ['a negative number', { 'retry-after': '-5' }, undefined],
+    // RFC 9110 delay-seconds is 1*DIGIT; Number() would read these as 1.5 and 30.
+    ['a fraction', { 'retry-after': '1.5' }, undefined],
+    ['a hex literal', { 'retry-after': '0x1E' }, undefined],
   ];
 
   for (const [label, headers, expected] of cases) {
@@ -259,7 +292,6 @@ describe.concurrent('a caller signal', () => {
         setTimeout(() => controller.abort(), 200);
         const thrown = await beliq.me({ signal: controller.signal }).catch((e: unknown) => e);
         expect(thrown).toBe(controller.signal.reason);
-        expect(retryClass(thrown)).toBe('none');
       },
     );
   });

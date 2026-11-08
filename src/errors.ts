@@ -11,8 +11,8 @@ export class BeliqApiError extends Error {
   readonly status: number;
   readonly details?: Record<string, unknown>;
   /**
-   * The response's `Retry-After` in seconds, when it gave one as a number of
-   * seconds; `undefined` otherwise, an HTTP date included. The retry loop reads
+   * The response's `Retry-After` in seconds, when it gave one as whole seconds
+   * (RFC 9110 delay-seconds); `undefined` otherwise, an HTTP date included. The retry loop reads
    * the header the same way, so this is the wait it would have taken.
    */
   readonly retryAfterSeconds?: number;
@@ -35,12 +35,15 @@ export class BeliqApiError extends Error {
   }
 }
 
-/** A `Retry-After` given as delay-seconds; `undefined` for any other form or none. */
+/** RFC 9110, section 10.2.3: `delay-seconds = 1*DIGIT`. */
+const DELAY_SECONDS = /^\d+$/;
+
+/** A `Retry-After` given as delay-seconds; `undefined` for an HTTP date, any other form or none. */
 export function parseRetryAfterSeconds(headers: Headers | undefined): number | undefined {
   const header = headers?.get('retry-after');
-  if (!header) return undefined;
-  const seconds = Number(header);
-  return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined;
+  return header !== null && header !== undefined && DELAY_SECONDS.test(header)
+    ? Number(header)
+    : undefined;
 }
 
 interface ParsedEnvelope {
