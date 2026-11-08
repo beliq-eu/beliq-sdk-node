@@ -4,7 +4,7 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
-## 0.7.3 - unreleased
+## 0.7.3 - 2026-11-08
 
 - `retryClass(error)` says how the client's retry loop treats a failure:
   `budget` (retried until `retryBudgetMs` is spent), `count` (up to
