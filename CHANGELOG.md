@@ -13,14 +13,19 @@ that reason, and a minor is reserved for a change that needs consumers to opt in
   30-second step limit, can hand a `budget` failure to the host's own retry.
   The `RetryClass` type is exported too.
 - `BeliqApiError` has `retryAfterSeconds`: the response's `Retry-After` when
-  it gave a number of seconds, otherwise `undefined`.
+  it gave whole seconds, otherwise `undefined`. The retry loop now reads the
+  header the same way, as RFC 9110 delay-seconds: a value such as `1.5` or
+  `0x1E` was read as a number of seconds before and is now backed off from
+  like a missing header.
 - Every method takes a `signal` (`generate` and `me` in a new second
   argument, the others in their options). It ends the call at once, during an
   attempt or a wait between retries, with the signal's reason, and nothing is
   sent when it is aborted already.
-- A TLS failure is no longer retried: a certificate that fails verification,
-  a certificate for another name or a handshake OpenSSL refused is thrown on
-  the first attempt, as the Python SDK does. It was retried up to 3 times.
+- A certificate that fails verification, or one for another name, is no
+  longer retried: it is thrown on the first attempt, as the Python SDK does.
+  It was retried up to 3 times. An OpenSSL error (`ERR_SSL_*`) is still
+  retried up to 3 times, since it can also come after the request was sent;
+  the Python SDK raises one from the handshake at once.
 
 ## 0.7.2 - 2026-11-07
 

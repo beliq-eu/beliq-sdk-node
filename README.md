@@ -113,8 +113,8 @@ numbers.
 | A connection that could not be opened: a `cause.code` of `ECONNREFUSED`, `ENOTFOUND`, `EAI_AGAIN`, `ENETUNREACH`, `EHOSTUNREACH` or `UND_ERR_CONNECT_TIMEOUT` | until the budget is spent |
 | `429` `RATE_LIMITED` or `ACCOUNT_THROTTLED` | up to `maxRetries` times |
 | `503` `ENGINE_UNAVAILABLE`, and any other `502` or `503` with a beliq error code | up to `maxRetries` times |
-| Any other thrown error, such as a connection lost after the request was sent | up to `maxRetries` times |
-| A TLS failure: a `cause.code` from Node's [X509 certificate error codes](https://nodejs.org/api/tls.html#x509-certificate-error-codes), `ERR_TLS_CERT_ALTNAME_INVALID` or `ERR_SSL_*` | never |
+| A certificate that fails verification: a `cause.code` from Node's [X509 certificate error codes](https://nodejs.org/api/tls.html#x509-certificate-error-codes), or `ERR_TLS_CERT_ALTNAME_INVALID` | never |
+| Any other thrown error, such as a connection lost after the request was sent, or an OpenSSL error (`ERR_SSL_*`), which can come after the send too | up to `maxRetries` times |
 | `429` `QUOTA_EXCEEDED`, `504`, this client's own timeout, and every other status | never |
 
 Every wait follows the server's `Retry-After` in full, plus up to 250 ms of
@@ -137,10 +137,10 @@ that meets one like it ends with the last error.
 
 Some hosts end a step long before an outage is over: an automation platform
 that gives a step 30 seconds, or an MCP client that waits 60. There, turn the
-client's retry off and hand the failure to the host's own retry:
+client's retry off and hand an outage to the host's own retry:
 
 ```ts
-import { Beliq, retryClass, BeliqApiError } from '@beliq/sdk';
+import { Beliq, retryClass } from '@beliq/sdk';
 
 const beliq = new Beliq({ apiKey, retryBudgetMs: 0, timeoutMs: 25_000 });
 
@@ -148,18 +148,29 @@ try {
   return await beliq.validate(xml);
 } catch (err) {
   if (retryClass(err) === 'budget') {
-    const wait = err instanceof BeliqApiError ? err.retryAfterSeconds : undefined;
+    // A refused connection carries no header, so `wait` can be undefined.
+    const wait = (err as { retryAfterSeconds?: number }).retryAfterSeconds;
     // Tell the host to try the step again after `wait` seconds.
   }
   throw err;
 }
 ```
 
-`retryClass(error)` answers `budget`, `count` or `none`, the row of the table
-above that the error falls in. The client's own retry loop uses the same
-function, so it is the class the client acted on. `BeliqApiError` carries
-`retryAfterSeconds`, the response's `Retry-After` when it gave a number of
-seconds, and `undefined` for an HTTP date or no header, as the loop reads it.
+`retryClass(error)` answers `budget`, `count` or `none`: the class of the
+table above, "until the budget is spent", "up to `maxRetries` times" or
+"never". The client's own retry loop uses the same function, so it is the
+class the client acted on. An abort by your own `signal` (below) is not
+classified: the loop ends at once, so check `signal.aborted` first.
+
+`retryBudgetMs: 0` turns off the retries by count as well. The example hands
+only the budget class to the host, so a `429` `RATE_LIMITED`, a `503`
+`ENGINE_UNAVAILABLE` and a connection lost after the send then fail the step.
+Hand those to the host too only if it bounds how often it retries: a repeat of
+`ENGINE_UNAVAILABLE` runs the same slow document again.
+
+`BeliqApiError` carries `retryAfterSeconds`, the response's `Retry-After` when
+it gave whole seconds, and `undefined` for an HTTP date, any other form or no
+header, as the loop reads it.
 
 Every method takes a `signal`, an `AbortSignal` that ends the call at once,
 during an attempt or a wait, with the signal's reason. A worker that stops on
