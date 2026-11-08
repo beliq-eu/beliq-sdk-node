@@ -25,6 +25,7 @@ import { buildRequest } from '../src/buildRequest';
 import { BeliqApiError } from '../src/errors';
 import { DEFAULT_MAX_RETRIES, retryClass, type RetryClass } from '../src/index';
 import { send, type ResolvedConfig } from '../src/transport';
+import type { ApiErrorCode } from '../src/types';
 
 const API_KEY = 'blq_test_key';
 
@@ -42,7 +43,7 @@ async function withServer(handler: Handler, body: (port: number) => Promise<void
   }
 }
 
-function answer(status: number, code?: string, headers: Record<string, string> = {}): Handler {
+function answer(status: number, code?: ApiErrorCode, headers: Record<string, string> = {}): Handler {
   return (_req, res) => {
     const body =
       code === undefined
@@ -122,7 +123,7 @@ describe.concurrent('retryClass agrees with the retries the client makes', () =>
     ['429 QUOTA_EXCEEDED', answer(429, 'QUOTA_EXCEEDED', { 'retry-after': '0' }), 'none'],
     ['504 with no beliq code', answer(504), 'none'],
     ['422 VALIDATION_ERROR', answer(422, 'VALIDATION_ERROR'), 'none'],
-    ['401 UNAUTHORIZED', answer(401, 'UNAUTHORIZED'), 'none'],
+    ['401 INVALID_API_KEY', answer(401, 'INVALID_API_KEY'), 'none'],
   ];
 
   for (const [label, handler, expected] of statusCases) {

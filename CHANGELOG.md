@@ -17,8 +17,8 @@ that reason, and a minor is reserved for a change that needs consumers to opt in
   header the same way, as RFC 9110 delay-seconds: a value such as `1.5` or
   `0x1E` was read as a number of seconds before and is now backed off from
   like a missing header.
-- Every method takes a `signal` (`generate` and `me` in a new second
-  argument, the others in their options). It ends the call at once, during an
+- Every method takes a `signal` (`generate` in a new second argument, `me`
+  in a new first one, the others in their options). It ends the call at once, during an
   attempt or a wait between retries, with the signal's reason, and nothing is
   sent when it is aborted already.
 - A certificate that fails verification, or one for another name, is no
