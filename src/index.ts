@@ -2,6 +2,7 @@ export { Beliq } from './client';
 export type {
   BeliqOptions,
   DocumentOptions,
+  RequestOptions,
   GenerateInput,
   GenerateResult,
   GenerateMeta,
@@ -15,6 +16,8 @@ export type {
 } from './client';
 
 export { BeliqApiError } from './errors';
+export { retryClass } from './transport';
+export type { RetryClass } from './transport';
 
 export {
   DEFAULT_BASE_URL,
