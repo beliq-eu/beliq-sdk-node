@@ -1,6 +1,6 @@
 {
   "name": "@beliq/sdk",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Official beliq SDK: validate, generate, convert and parse EU e-invoices (XRechnung, ZUGFeRD, Factur-X, Peppol BIS) with the beliq API from Node.js.",
   "keywords": [
     "beliq",
