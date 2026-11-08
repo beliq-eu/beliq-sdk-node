@@ -90,7 +90,18 @@ export interface GenerateInput {
   advanced?: PlainObject;
 }
 
-export interface DocumentOptions {
+/** Options every method takes. */
+export interface RequestOptions {
+  /**
+   * Ends the call at once with the signal's reason, during an attempt or a
+   * wait between retries, so a worker that stops does not sit in a
+   * `Retry-After` wait. Nothing is sent when it is aborted already. An attempt
+   * already sent may still have run on beliq's side.
+   */
+  signal?: AbortSignal;
+}
+
+export interface DocumentOptions extends RequestOptions {
   /** Override the sniffed request content type (application/xml | application/pdf). */
   contentType?: string;
   /**
@@ -293,21 +304,22 @@ export class Beliq {
   }
 
   /** Account, plan, and quota context for the key. Does not consume quota. */
-  async me(): Promise<AccountInfo> {
-    return this.#json<AccountInfo>({ operation: 'me' });
+  async me(options: RequestOptions = {}): Promise<AccountInfo> {
+    return this.#json<AccountInfo>({ operation: 'me' }, options.signal);
   }
 
   /** Generate an e-invoice from an EN 16931 object. */
-  async generate(input: GenerateInput): Promise<GenerateResult> {
+  async generate(input: GenerateInput, options: RequestOptions = {}): Promise<GenerateResult> {
     const res = await send(
       this.#config,
       buildRequest({ operation: 'generate', ...input, sealed: input.seal }),
+      options.signal,
     );
     const meta = generateMeta(res.headers);
 
     if (input.seal) {
       const envelope = parseEnvelope(res.bytes);
-      if (envelope?.success === false) throw errorFromResponse(res.status, res.bytes);
+      if (envelope?.success === false) throw errorFromResponse(res.status, res.bytes, res.headers);
       const data = envelope?.data as GenerateResponse | undefined;
       if (!data || data.output === undefined) {
         throw new BeliqApiError('beliq: seal response was not a JSON envelope', {
@@ -343,7 +355,7 @@ export class Beliq {
       validateFormat: options.format,
       franceCtc: options.franceCtc,
       ruleset: options.ruleset,
-    });
+    }, options.signal);
   }
 
   /** Parse a document into a structured EN 16931 invoice. */
@@ -352,7 +364,7 @@ export class Beliq {
       operation: 'parse',
       ...this.#rawParams(document, options),
       parseFormat: options.format,
-    });
+    }, options.signal);
   }
 
   /** Convert a document between EN 16931 formats. */
@@ -367,6 +379,7 @@ export class Beliq {
         targetProfile: options.targetProfile,
         dropFranceCtcOverlay: options.dropFranceCtcOverlay,
       }),
+      options.signal,
     );
     return {
       contentType: res.headers.get('content-type') ?? 'application/octet-stream',
@@ -387,10 +400,10 @@ export class Beliq {
     };
   }
 
-  async #json<T>(params: BuildParams): Promise<T> {
-    const res: RawResponse = await send(this.#config, buildRequest(params));
+  async #json<T>(params: BuildParams, signal?: AbortSignal): Promise<T> {
+    const res: RawResponse = await send(this.#config, buildRequest(params), signal);
     const envelope = parseEnvelope(res.bytes);
-    if (envelope?.success === false) throw errorFromResponse(res.status, res.bytes);
+    if (envelope?.success === false) throw errorFromResponse(res.status, res.bytes, res.headers);
     if (!envelope || envelope.data === undefined) {
       throw new BeliqApiError('beliq: response was not a JSON envelope', { status: res.status });
     }

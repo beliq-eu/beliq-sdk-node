@@ -277,7 +277,6 @@ describe('retry classes', () => {
     for (const thrown of [
       fetchFailed('ECONNRESET'),
       fetchFailed('UND_ERR_SOCKET'),
-      fetchFailed('UNABLE_TO_VERIFY_LEAF_SIGNATURE'),
       new Error('custom fetch broke'),
     ]) {
       const fetchImpl = vi.fn(() => Promise.reject(thrown));

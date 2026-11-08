@@ -113,7 +113,8 @@ numbers.
 | A connection that could not be opened: a `cause.code` of `ECONNREFUSED`, `ENOTFOUND`, `EAI_AGAIN`, `ENETUNREACH`, `EHOSTUNREACH` or `UND_ERR_CONNECT_TIMEOUT` | until the budget is spent |
 | `429` `RATE_LIMITED` or `ACCOUNT_THROTTLED` | up to `maxRetries` times |
 | `503` `ENGINE_UNAVAILABLE`, and any other `502` or `503` with a beliq error code | up to `maxRetries` times |
-| Any other thrown error, such as a connection lost after the request was sent | up to `maxRetries` times |
+| A certificate that fails verification: a `cause.code` from Node's [X509 certificate error codes](https://nodejs.org/api/tls.html#x509-certificate-error-codes), or `ERR_TLS_CERT_ALTNAME_INVALID` | never |
+| Any other thrown error, such as a connection lost after the request was sent, or an OpenSSL error (`ERR_SSL_*`), which can come after the send too | up to `maxRetries` times |
 | `429` `QUOTA_EXCEEDED`, `504`, this client's own timeout, and every other status | never |
 
 Every wait follows the server's `Retry-After` in full, plus up to 250 ms of
@@ -131,6 +132,59 @@ measured, of about 9 and 12 minutes. The third lasted 33 minutes, and a call
 that meets one like it ends with the last error.
 
 `maxRetries: 0` turns retrying off, and so does `retryBudgetMs: 0`.
+
+### Retrying in a host with a time limit
+
+Some hosts end a step long before an outage is over: an automation platform
+that gives a step 30 seconds, or an MCP client that waits 60. There, turn the
+client's retry off and hand an outage to the host's own retry:
+
+```ts
+import { Beliq, retryClass } from '@beliq/sdk';
+
+const beliq = new Beliq({ apiKey, retryBudgetMs: 0, timeoutMs: 25_000 });
+
+try {
+  return await beliq.validate(xml);
+} catch (err) {
+  if (retryClass(err) === 'budget') {
+    // A refused connection carries no header, so `wait` can be undefined.
+    const wait = (err as { retryAfterSeconds?: number }).retryAfterSeconds;
+    // Tell the host to try the step again after `wait` seconds.
+  }
+  throw err;
+}
+```
+
+`retryClass(error)` answers `budget`, `count` or `none`: the class of the
+table above, "until the budget is spent", "up to `maxRetries` times" or
+"never". The client's own retry loop uses the same function, so it is the
+class the client acted on. An abort by your own `signal` (below) is not
+classified: the loop ends at once, so check `signal.aborted` first.
+
+`retryBudgetMs: 0` turns off the retries by count as well. The example hands
+only the budget class to the host, so a `429` `RATE_LIMITED`, a `503`
+`ENGINE_UNAVAILABLE` and a connection lost after the send then fail the step.
+Hand those to the host too only if it bounds how often it retries: a repeat of
+`ENGINE_UNAVAILABLE` runs the same slow document again.
+
+`BeliqApiError` carries `retryAfterSeconds`, the response's `Retry-After` when
+it gave whole seconds, and `undefined` for an HTTP date, any other form or no
+header, as the loop reads it.
+
+Every method takes a `signal`, an `AbortSignal` that ends the call at once,
+during an attempt or a wait, with the signal's reason. A worker that stops on
+`SIGTERM` passes one, so it does not sit in a `Retry-After` wait. Nothing is
+sent when the signal is aborted already; an attempt already sent may still have
+run on beliq's side.
+
+```ts
+const stop = new AbortController();
+process.once('SIGTERM', () => stop.abort());
+await beliq.validate(xml, { signal: stop.signal });
+await beliq.generate(input, { signal: stop.signal });
+await beliq.me({ signal: stop.signal });
+```
 
 What a retry costs:
 
@@ -173,8 +227,8 @@ shorter than the server's own turns completed work into an unknown outcome. Set
 
 | Method | Endpoint | Input | Returns |
 |---|---|---|---|
-| `me()` | GET /v1/me | none | `AccountInfo` (no quota cost) |
-| `generate(input)` | POST /v1/generate | EN 16931 invoice object | `{ contentType, bytes, xml?, sha256?, validationResult?, meta }` |
+| `me(options?)` | GET /v1/me | none | `AccountInfo` (no quota cost) |
+| `generate(input, options?)` | POST /v1/generate | EN 16931 invoice object | `{ contentType, bytes, xml?, sha256?, validationResult?, meta }` |
 | `validate(document, options?)` | POST /v1/validate | XML or PDF | `ValidationResult` |
 | `parse(document, options?)` | POST /v1/parse | XML or PDF | `ParseResult` |
 | `convert(document, options)` | POST /v1/convert | XML or PDF | `{ contentType, bytes, meta }` |

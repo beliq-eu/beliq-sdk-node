@@ -4,6 +4,29 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.7.3 - unreleased
+
+- `retryClass(error)` says how the client's retry loop treats a failure:
+  `budget` (retried until `retryBudgetMs` is spent), `count` (up to
+  `maxRetries` times) or `none`. The loop uses the same function. A caller
+  that turns the client's retry off, such as a connector inside a host with a
+  30-second step limit, can hand a `budget` failure to the host's own retry.
+  The `RetryClass` type is exported too.
+- `BeliqApiError` has `retryAfterSeconds`: the response's `Retry-After` when
+  it gave whole seconds, otherwise `undefined`. The retry loop now reads the
+  header the same way, as RFC 9110 delay-seconds: a value such as `1.5` or
+  `0x1E` was read as a number of seconds before and is now backed off from
+  like a missing header.
+- Every method takes a `signal` (`generate` in a new second argument, `me`
+  in a new first one, the others in their options). It ends the call at once, during an
+  attempt or a wait between retries, with the signal's reason, and nothing is
+  sent when it is aborted already.
+- A certificate that fails verification, or one for another name, is no
+  longer retried: it is thrown on the first attempt, as the Python SDK does.
+  It was retried up to 3 times. An OpenSSL error (`ERR_SSL_*`) is still
+  retried up to 3 times, since it can also come after the request was sent;
+  the Python SDK raises one from the handshake at once.
+
 ## 0.7.2 - 2026-11-07
 
 - `ValidationResult` has `rulesetSupersededOn`, from the API document
