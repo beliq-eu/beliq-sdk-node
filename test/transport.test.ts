@@ -277,13 +277,22 @@ describe('retry classes', () => {
     for (const thrown of [
       fetchFailed('ECONNRESET'),
       fetchFailed('UND_ERR_SOCKET'),
-      fetchFailed('UNABLE_TO_VERIFY_LEAF_SIGNATURE'),
       new Error('custom fetch broke'),
     ]) {
       const fetchImpl = vi.fn(() => Promise.reject(thrown));
 
       await expect(defaults(fetchImpl as unknown as typeof fetch).me()).rejects.toBe(thrown);
       expect(fetchImpl).toHaveBeenCalledTimes(DEFAULT_MAX_RETRIES + 1);
+    }
+  });
+
+  it('throws a TLS failure on the first attempt, since no wait fixes it', async () => {
+    for (const code of ['UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'ERR_TLS_CERT_ALTNAME_INVALID', 'ERR_SSL_WRONG_VERSION_NUMBER']) {
+      const thrown = fetchFailed(code);
+      const fetchImpl = vi.fn(() => Promise.reject(thrown));
+
+      await expect(defaults(fetchImpl as unknown as typeof fetch).me()).rejects.toBe(thrown);
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
     }
   });
 
