@@ -328,8 +328,8 @@ the changes below.
   currency) are typed on the invoice.
 - A scheduled ruleset change reports its capabilities.
 - The README's quick-start invoice is one the API accepts as-is.
-- An em-dash scrub gate runs over the whole tree before publish, and the
-  release workflow carries job timeouts and refuses a tag that is not on `main`.
+- The release workflow carries job timeouts and refuses a tag that is not on
+  `main`.
 - The `js-yaml` override floor is raised above GHSA-2883-xcg3-v3hh.
 
 ## 0.3.1 - 2026-09-02
