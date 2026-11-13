@@ -1,5 +1,7 @@
 # @beliq/sdk
 
+beliq is the platform for European e-invoicing: one API to generate, validate, convert and parse e-invoices, with the rule pack, version and check depth on its verdicts.
+
 Official Node/TypeScript SDK for the [beliq](https://beliq.eu) API: validate, generate, convert and parse EU e-invoices (XRechnung, ZUGFeRD, Factur-X, Peppol BIS) from Node.js. A validation result names the rule pack that judged the document, its version and, in `verificationBadgeLabel` when the API states one, how deep the check went. [How verification works](https://docs.beliq.eu/compliance/how-verification-works/) explains each depth.
 
 beliq produces and checks the document. Transmission (Peppol, plateforme agréée, KSeF, SDI), archiving, and tax-authority reporting stay with your access point.
