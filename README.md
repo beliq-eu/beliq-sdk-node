@@ -117,7 +117,7 @@ numbers.
 | `503` `ENGINE_UNAVAILABLE`, and any other `502` or `503` with a beliq error code | up to `maxRetries` times |
 | A certificate that fails verification: a `cause.code` from Node's [X509 certificate error codes](https://nodejs.org/api/tls.html#x509-certificate-error-codes), or `ERR_TLS_CERT_ALTNAME_INVALID` | never |
 | Any other thrown error, such as a connection lost after the request was sent, or an OpenSSL error (`ERR_SSL_*`), which can come after the send too | up to `maxRetries` times |
-| `429` `QUOTA_EXCEEDED`, `504`, this client's own timeout, and every other status | never |
+| `429` `QUOTA_EXCEEDED` or `DOCUMENT_CEILING_REACHED`, `504`, this client's own timeout, and every other status | never |
 
 Every wait follows the server's `Retry-After` in full, plus up to 250 ms of
 jitter. Without one, the client backs off exponentially from 500 ms with jitter,
@@ -214,9 +214,10 @@ What a retry costs:
 mean the work is still running on beliq's side, and a retry runs the same
 document again from the start, so it would likely run out of time again.
 
-A `429` carrying `QUOTA_EXCEEDED` is not retried either. `RATE_LIMITED` and
-`ACCOUNT_THROTTLED` clear on their own, but a spent monthly allowance only returns
-when your billing window turns, so the error is raised straight away and names the
+A `429` carrying `QUOTA_EXCEEDED` or `DOCUMENT_CEILING_REACHED` is not retried
+either. `RATE_LIMITED` and `ACCOUNT_THROTTLED` clear on their own, but a spent
+monthly allowance, or the extra-document ceiling above it, only returns when your
+billing window turns, so the error is raised straight away and names the
 cause instead of sleeping against it.
 
 The default deadline is generous because beliq runs the full Schematron rule set

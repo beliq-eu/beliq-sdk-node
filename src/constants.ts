@@ -16,9 +16,10 @@ export const DEFAULT_TIMEOUT_MS = 90_000;
 
 /**
  * Extra attempts after the first for the failures retried by count: a 429 other
- * than `QUOTA_EXCEEDED`, a 502 or 503 carrying any beliq error code but a 503
- * `DATABASE_UNAVAILABLE`, and any thrown error but a connection that could not
- * be opened, such as a connection lost after the request was sent.
+ * than `QUOTA_EXCEEDED` and `DOCUMENT_CEILING_REACHED`, a 502 or 503 carrying
+ * any beliq error code but a 503 `DATABASE_UNAVAILABLE`, and any thrown error
+ * but a connection that could not be opened, such as a connection lost after
+ * the request was sent.
  */
 export const DEFAULT_MAX_RETRIES = 3;
 

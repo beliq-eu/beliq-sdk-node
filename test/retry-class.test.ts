@@ -121,6 +121,7 @@ describe.concurrent('retryClass agrees with the retries the client makes', () =>
     ['502 DATABASE_UNAVAILABLE', answer(502, 'DATABASE_UNAVAILABLE', { 'retry-after': '0' }), 'count'],
     ['429 RATE_LIMITED', answer(429, 'RATE_LIMITED', { 'retry-after': '0' }), 'count'],
     ['429 QUOTA_EXCEEDED', answer(429, 'QUOTA_EXCEEDED', { 'retry-after': '0' }), 'none'],
+    ['429 DOCUMENT_CEILING_REACHED', answer(429, 'DOCUMENT_CEILING_REACHED', { 'retry-after': '0' }), 'none'],
     ['504 with no beliq code', answer(504), 'none'],
     ['422 VALIDATION_ERROR', answer(422, 'VALIDATION_ERROR'), 'none'],
     ['401 INVALID_API_KEY', answer(401, 'INVALID_API_KEY'), 'none'],
