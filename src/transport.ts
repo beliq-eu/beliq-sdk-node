@@ -34,14 +34,18 @@ export interface RawResponse {
 }
 
 /**
- * The one 429 waiting cannot clear. `RATE_LIMITED` frees up in seconds and
- * `ACCOUNT_THROTTLED` in minutes, but a spent monthly allowance only returns when
- * the billing window turns, and beliq says so honestly: its `Retry-After` on this
- * code is the seconds remaining in the window, which can be weeks. Retrying it
- * waits against a refusal that is already final, so the caller is told the
- * request hung rather than that the quota is gone.
+ * The 429s waiting cannot clear. `RATE_LIMITED` frees up in seconds and
+ * `ACCOUNT_THROTTLED` in minutes, but a spent monthly allowance, or the
+ * extra-document ceiling above it, does not return before the billing window
+ * turns unless the account raises its cap or its plan. beliq says so honestly:
+ * its `Retry-After` on these codes is the seconds remaining in the window, which
+ * can be weeks. Retrying them waits against a refusal no wait clears, so the
+ * caller is told the request hung rather than that the quota is gone.
  */
-const QUOTA_EXHAUSTED_CODE: ApiErrorCode = 'QUOTA_EXCEEDED';
+const QUOTA_EXHAUSTED_CODES: ReadonlySet<string> = new Set<ApiErrorCode>([
+  'QUOTA_EXCEEDED',
+  'DOCUMENT_CEILING_REACHED',
+]);
 
 /** The API's answer while its database is out; the outage it reports outlasts a few quick retries. */
 // Typed by the generated error union, so a code renamed in openapi.json fails the typecheck.
@@ -123,14 +127,15 @@ function isCertificateFailure(code: string): boolean {
  * answered, or the pod that held the connection is gone), and a connection that
  * could not be opened.
  *
- * `count`: retried up to `maxRetries` times. A 429 other than `QUOTA_EXCEEDED`,
- * since each one counts toward the account's throttle; a 502 or 503 with any
- * other beliq code, `ENGINE_UNAVAILABLE` included, since an engine timeout
- * answers that code too and a budget would run the same slow document dozens of
- * times; and a thrown error that may have come after the request was sent.
- * beliq may have run and charged that request, but it does not charge a repeat
- * of a charged request within 15 minutes, up to 10 repeats (beliq's own values,
- * which no standard sets), and every attempt sends the same bytes.
+ * `count`: retried up to `maxRetries` times. A 429 other than `QUOTA_EXCEEDED`
+ * and `DOCUMENT_CEILING_REACHED`, since each one counts toward the account's
+ * throttle; a 502 or 503 with any other beliq code, `ENGINE_UNAVAILABLE`
+ * included, since an engine timeout answers that code too and a budget would run
+ * the same slow document dozens of times; and a thrown error that may have come
+ * after the request was sent. beliq may have run and charged that request, but
+ * it does not charge a repeat of a charged request within 15 minutes, up to 10
+ * repeats (beliq's own values, which no standard sets), and every attempt sends
+ * the same bytes.
  *
  * `none`: not retried. A 504 and this client's own timeout mean the work may
  * still be running on beliq's side, and a repeat runs the same document again
@@ -140,7 +145,7 @@ function isCertificateFailure(code: string): boolean {
 export type RetryClass = 'budget' | 'count' | 'none';
 
 function classifyStatus(status: number, code?: string): RetryClass {
-  if (status === 429) return code === QUOTA_EXHAUSTED_CODE ? 'none' : 'count';
+  if (status === 429) return code !== undefined && QUOTA_EXHAUSTED_CODES.has(code) ? 'none' : 'count';
   if (status !== 502 && status !== 503) return 'none';
   if (!code) return 'budget';
   return status === 503 && code === DATABASE_UNAVAILABLE_CODE ? 'budget' : 'count';
