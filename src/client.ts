@@ -53,7 +53,8 @@ export interface BeliqOptions {
    * 3): a 429 other than `QUOTA_EXCEEDED` and `DOCUMENT_CEILING_REACHED`, a
    * 502 or 503 carrying any beliq error code but a 503 `DATABASE_UNAVAILABLE`,
    * and any thrown error but a connection that could not be opened, such as a
-   * connection lost after the request was sent. When you set it, it bounds every retry, so 0 disables retrying.
+   * connection lost after the request was sent. When you set it, it bounds
+   * every retry, so 0 disables retrying.
    */
   maxRetries?: number;
   /**
