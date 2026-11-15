@@ -4,6 +4,24 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.7.4 - 2026-11-16
+
+- A `429` carrying `DOCUMENT_CEILING_REACHED` is thrown at once and not
+  retried, like `QUOTA_EXCEEDED`, and `retryClass` returns `none` for it,
+  where it returned `count`. The API sends it when an org on usage billing
+  reaches its extra-document cap, or the ceiling above its monthly quota,
+  with a `Retry-After` to the end of the billing window. Raising the cap or
+  the plan clears it sooner. Before, the client retried it up to
+  `maxRetries` times.
+- `ApiErrorCode` gains `DOCUMENT_CEILING_REACHED`, and the four admission
+  codes of the API document 0.27.0: `DOCUMENT_PROFILE_NOT_ACCEPTED`,
+  `FLOW_OUTSIDE_FRENCH_PERIMETER`, `RECIPIENT_ADDRESS_INVALID` and
+  `SEND_CANNOT_COMPOSE_FOR_NETWORK`.
+- The README and the `package.json` description open with one sentence on
+  what beliq is.
+- The vendored `openapi.json` is document `0.28.1` of the API, up from
+  `0.26.0`.
+
 ## 0.7.3 - 2026-11-08
 
 - `retryClass(error)` says how the client's retry loop treats a failure:
