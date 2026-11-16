@@ -33,7 +33,7 @@ const TEST_KEY_PREFIX = 'blq_test_';
 export interface BeliqOptions {
   /** API key from the beliq dashboard (API Keys). */
   apiKey: string;
-  /** Override only for a self-hosted or staging deployment. */
+  /** The base URL the client sends its API requests to. Defaults to https://api.beliq.eu. */
   baseUrl?: string;
   /** How to send the key: 'header' => X-API-Key (default), 'bearer' => Authorization. */
   auth?: 'header' | 'bearer';

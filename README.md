@@ -76,7 +76,7 @@ Create an API key in the beliq dashboard under API Keys, then pass it to the cli
 ```ts
 new Beliq({ apiKey: 'blq_live_...' });                 // sends X-API-Key (default)
 new Beliq({ apiKey: 'blq_live_...', auth: 'bearer' });  // sends Authorization: Bearer
-new Beliq({ apiKey: 'blq_live_...', baseUrl: 'https://staging.beliq.eu' });
+new Beliq({ apiKey: 'blq_live_...', baseUrl: 'https://api.beliq.eu' }); // where requests go (default shown)
 ```
 
 Keys are prefixed `blq_live_` (production, draws your plan quota) or `blq_test_` (sandbox, separate free allowance, watermarked output). `client.livemode` reports the mode from the key prefix before any request; generate and convert results also carry the authoritative `meta.livemode` from the response.
