@@ -4,6 +4,21 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.7.5 - 2026-11-16
+
+- The README says that delivery through beliq is in development, and that
+  until it is available, transmission (Peppol, plateforme agréée, SDI) and
+  tax-authority reporting stay with your access point. Archiving stays with
+  you, and beliq does not operate KSeF submission. Before, it said that beliq
+  produces and checks the document, with transmission, archiving and
+  reporting at your access point.
+- The vendored `openapi.json` is document `0.28.3` of the API, up from
+  `0.28.1`. Only two descriptions change: the API's own description says the
+  same about delivery, and the validate operation's says that a pin whose
+  source cannot be fetched can be confirmed against its mirror, when it names
+  one. The generated types carry the second as a doc comment. No type and no
+  behaviour changed.
+
 ## 0.7.4 - 2026-11-16
 
 - A `429` carrying `DOCUMENT_CEILING_REACHED` is thrown at once and not
