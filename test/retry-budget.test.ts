@@ -2,9 +2,9 @@
  * The retry budget against a real HTTP server on 127.0.0.1.
  *
  * While beliq's database is out, the API answers 503 `DATABASE_UNAVAILABLE` with
- * `Retry-After: 30`. Two of the three database outages beliq has measured lasted
+ * `Retry-After: 15`. Two of the three database outages beliq has measured lasted
  * about 9 and 12 minutes, the third 33.
- * A client that stops after 3 retries gives up about 2 minutes in, so every
+ * A client that stops after 3 retries gives up within about a minute and a half, so every
  * caller loses its call. These cases hold the client to a time budget instead: it rides a
  * window shorter than the budget, gives up once the budget is spent, follows the
  * server's `Retry-After` in full, and keeps its own backoff under a ceiling.
