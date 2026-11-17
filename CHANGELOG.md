@@ -4,6 +4,18 @@
 resolves 0.4.x and never reaches 0.5.0. Additive spec syncs ship as patches for
 that reason, and a minor is reserved for a change that needs consumers to opt in.
 
+## 0.7.6 - 2026-11-17
+
+- The vendored `openapi.json` is document `0.30.0` of the API, up from
+  `0.28.3`. `AccountInfo`, what `me()` returns, gains `deliveries`: the
+  organization's monthly live-delivery limit, how many it has used and has
+  left, and when the window resets. It is `null` on a test key.
+- `ApiErrorCode` gains `LIVE_DELIVERY_UNAVAILABLE` (403) and
+  `DELIVERY_LIMIT_REACHED` (429). The API sends them only on its delivery
+  routes, which this client does not call, so no retry rule changed.
+- The README's `baseUrl` example shows the default, `https://api.beliq.eu`,
+  instead of a staging host. No behaviour changed.
+
 ## 0.7.5 - 2026-11-16
 
 - The README says that delivery through beliq is in development, and that

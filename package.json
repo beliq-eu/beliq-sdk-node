@@ -1,6 +1,6 @@
 {
   "name": "@beliq/sdk",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "description": "beliq is the platform for European e-invoicing: one API to generate, validate, convert and parse e-invoices, with the rule pack, version and check depth on its verdicts. Official Node.js SDK.",
   "keywords": [
     "beliq",
