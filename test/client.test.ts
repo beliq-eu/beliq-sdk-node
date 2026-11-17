@@ -82,6 +82,7 @@ describe('Beliq client', () => {
     // keyPrefix is null on the dashboard-assertion path.
     expect(acct.livemode).toBe(true);
     expect(acct.quota.resetsAt).toBe('2026-09-14T09:00:00.000Z');
+    expect(acct.deliveries?.remaining).toBe(988);
   });
 
   it('strips a trailing slash from a custom baseUrl', async () => {
