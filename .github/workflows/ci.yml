@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  # tsup 9 runs only on Node ^22.18 || ^24.11, so the build cannot share the test matrix,
-  # which keeps the engines floor. 24 is the Node release.yml builds the published package on.
+  # tsup 9 runs only on Node ^22.18 || ^24.11 || >=26, so the build cannot share the test matrix,
+  # which keeps the engines floor. 26 is the Node release.yml builds the published package on.
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version: '26'
           cache: npm
       - run: npm ci
       - run: npm run build
@@ -32,7 +32,9 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        node-version: ['20', '22']
+        # 20 is the engines floor, and Pipedream's runtime. 22 is the engines floor of the
+        # beliq integrations built on this SDK (n8n, Activepieces, Directus, the CLI, the MCP server).
+        node-version: ['20', '22', '26']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -108,7 +110,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version: '26'
           cache: npm
       - run: npm ci
       - name: Live API smoke test
