@@ -174,6 +174,10 @@ export interface components {
             };
             /** @description Lines nested under this line, at most 64 levels deep with the top-level line as level 1. The 64 is Beliq's own limit, not a format rule. A deeper tree is refused with 422 `VALIDATION_ERROR` before the body is checked against this schema, and no quota unit is spent. */
             subLines?: components["schemas"]["InvoiceLine"][];
+            italy?: {
+                /** @description FatturaPA Natura code. Required at a 0 % rate and refused at any other rate, except on `italy.tipoDocumento` TD16 (SdI controls 00400, 00401, 00429, 00430). An N6 code under `italy.esigibilitaIVA` S is refused (00420). Never derived from `vatCategoryCode`. */
+                natura?: "N1" | "N2.1" | "N2.2" | "N3.1" | "N3.2" | "N3.3" | "N3.4" | "N3.5" | "N3.6" | "N4" | "N5" | "N6.1" | "N6.2" | "N6.3" | "N6.4" | "N6.5" | "N6.6" | "N6.7" | "N6.8" | "N6.9" | "N7";
+            };
         };
     };
     responses: never;
@@ -226,7 +230,7 @@ export interface operations {
                                 limit: number;
                                 used: number;
                                 remaining: number;
-                                /** @description ISO 8601 UTC. The end of the window limit and used were counted over. On a live key that window is one month anchored on the organization billing day, so only an organization billed on the 1st resets at the turn of the month; on a test key it is the turn of the UTC month. */
+                                /** @description ISO 8601 UTC. The end of the window limit and used were counted over. On a live key that window is one month counted from the organization billing date: it resets on that day of the month (the last day of a shorter month), at the time of day billing started, in UTC. An organization that has not been billed yet resets at 00:00 UTC on the 1st, and one whose subscription ended keeps its old billing day. On a test key it is the turn of the UTC month. */
                                 resetsAt: string;
                             };
                             /** @description The monthly delivery limit and its count, or null on a test key: test sends count no deliveries. Once usage billing is live, a live delivery past the limit is refused with DELIVERY_LIMIT_REACHED. */
@@ -512,6 +516,10 @@ export interface operations {
                             };
                             /** @description Lines nested under this line, at most 64 levels deep with the top-level line as level 1. The 64 is Beliq's own limit, not a format rule. A deeper tree is refused with 422 `VALIDATION_ERROR` before the body is checked against this schema, and no quota unit is spent. */
                             subLines?: components["schemas"]["InvoiceLine"][];
+                            italy?: {
+                                /** @description FatturaPA Natura code. Required at a 0 % rate and refused at any other rate, except on `italy.tipoDocumento` TD16 (SdI controls 00400, 00401, 00429, 00430). An N6 code under `italy.esigibilitaIVA` S is refused (00420). Never derived from `vatCategoryCode`. */
+                                natura?: "N1" | "N2.1" | "N2.2" | "N3.1" | "N3.2" | "N3.3" | "N3.4" | "N3.5" | "N3.6" | "N4" | "N5" | "N6.1" | "N6.2" | "N6.3" | "N6.4" | "N6.5" | "N6.6" | "N6.7" | "N6.8" | "N6.9" | "N7";
+                            };
                         }[];
                         taxSummary?: {
                             vatCategoryCode: string;
@@ -520,6 +528,10 @@ export interface operations {
                             taxAmount: number;
                             exemptionReasonText?: string;
                             exemptionReasonCode?: string;
+                            italy?: {
+                                /** @description FatturaPA Natura code. Required at a 0 % rate and refused at any other rate, except on `italy.tipoDocumento` TD16 (SdI controls 00400, 00401, 00429, 00430). An N6 code under `italy.esigibilitaIVA` S is refused (00420). Never derived from `vatCategoryCode`. */
+                                natura?: "N1" | "N2.1" | "N2.2" | "N3.1" | "N3.2" | "N3.3" | "N3.4" | "N3.5" | "N3.6" | "N4" | "N5" | "N6.1" | "N6.2" | "N6.3" | "N6.4" | "N6.5" | "N6.6" | "N6.7" | "N6.8" | "N6.9" | "N7";
+                            };
                         }[];
                         delivery?: {
                             name?: string;
